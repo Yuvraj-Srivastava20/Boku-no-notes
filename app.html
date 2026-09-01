@@ -5,56 +5,103 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Boku No Notes - Workspace</title>
     <link rel="stylesheet" href="app.css">
-    <!-- Marked.js for Markdown Rendering -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
-<body class="dark-theme">
+<body data-theme="dark">
     <div class="app-container">
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <h2>Boku No Notes</h2>
-                <div class="sidebar-actions">
-                    <button id="themeToggleBtn" title="Toggle Theme">☀️ / 🌙</button>
-                    <button id="newBtn" title="New Note/List">+</button>
-                </div>
+                <h2 id="brandTitle">Boku No Notes</h2>
             </div>
 
-            <!-- Find/Search Note -->
             <div class="search-box">
                 <input type="text" id="findNoteInput" placeholder="Enter title here (Press Enter)...">
             </div>
 
             <div class="room-info">
-                <span>Room Code: <strong id="roomCodeDisplay">---</strong></span>
+                <span>Room: <strong id="roomCodeDisplay">---</strong></span>
+                <button id="changeRoomBtn" class="btn-room-change" title="Change Room Code">⚙️ Edit Room</button>
             </div>
 
-            <div class="notes-list" id="notesList">
-                <!-- Dynamically populated notes -->
+            <hr class="sidebar-divider">
+            <button id="newBtn" class="sidebar-add-btn" title="New Note/List">+ New Item</button>
+            <div class="notes-list" id="notesList"></div>
+
+            <div class="sidebar-footer">
+                <button id="themeToggleBtn" title="Toggle Theme">☀️ / 🌙 Theme</button>
             </div>
         </aside>
 
         <!-- Main Workspace -->
         <main class="workspace" id="workspace">
-            <div class="workspace-empty" id="emptyState">
-                <p>No note open. Select a note from the sidebar or click '+' to create one.</p>
+            <div class="workspace-empty fade-in" id="emptyState">
+                <p>No note open. Select a note from the sidebar or click '+ New Item' to create one.</p>
             </div>
 
-            <div class="workspace-active hidden" id="activeWorkspace">
+            <div class="workspace-active hidden fade-in" id="activeWorkspace">
                 <div class="workspace-header">
                     <h1 id="currentNoteTitle">Untitled</h1>
                     <span id="syncStatus" class="status-saved">Saved</span>
                 </div>
-                <div class="editor-container">
-                    <textarea id="editor" placeholder="Write markdown here..."></textarea>
-                    <div id="output" class="markdown-preview"></div>
+
+                <!-- Text Customization Toolbar -->
+                <div class="text-toolbar">
+                    <label>Font Size:
+                        <select id="fontSizeSelect">
+                            <option value="14px">Small</option>
+                            <option value="16px" selected>Normal</option>
+                            <option value="18px">Large</option>
+                            <option value="22px">Extra Large</option>
+                        </select>
+                    </label>
+                    <label>Font Style:
+                        <select id="fontStyleSelect">
+                            <option value="sans-serif">Sans-Serif</option>
+                            <option value="serif">Serif</option>
+                            <option value="monospace">Monospace</option>
+                            <option value="cursive" selected>Cursive</option>
+                        </select>
+                    </label>
+                    <label>Text Color:
+                        <input type="color" id="textColorPicker" value="#cdd6f4">
+                    </label>
+                    
+                    <div class="panel-toggle-controls">
+                        <button id="toggleEditorPaneBtn" class="btn-panel-toggle" title="Toggle Editor">📝 Text Area</button>
+                        <button id="togglePreviewPaneBtn" class="btn-panel-toggle" title="Toggle Preview">👁️ Preview Area</button>
+                        <button id="toggleClipboardBtn" class="btn-panel-toggle" title="Toggle Side Clipboard">📋 Clipboard (<span id="clipCount">0</span>)</button>
+                    </div>
+                </div>
+
+                <div class="main-editor-area">
+                    <div class="editor-container" id="editorContainer">
+                        <div class="editor-wrapper" id="editorPane">
+                            <div id="line-numbers" class="line-numbers">1</div>
+                            <textarea id="note-editor" spellcheck="true" autocomplete="on" autocorrect="on" capitalize="off" placeholder="Write plain text lines or standard Markdown here..."></textarea>
+                        </div>
+                        
+                        <!-- Resizable Splitter Bar -->
+                        <div class="resizer" id="dragResizer"></div>
+
+                        <div id="output" class="markdown-preview"></div>
+                    </div>
+
+                    <!-- Side-by-Side Collapsible Clipboard Panel -->
+                    <aside id="clipboardPanel" class="clipboard-panel hidden">
+                        <div class="clipboard-header">
+                            <h3>Clipboard History</h3>
+                            <button id="closeClipboardBtn" class="close-panel-btn">&times;</button>
+                        </div>
+                        <div id="clipboardItems" class="clipboard-items-list"></div>
+                    </aside>
                 </div>
             </div>
         </main>
     </div>
 
     <!-- New Item Dialog -->
-    <dialog id="newItemModal">
+    <dialog id="newItemModal" class="pop-in">
         <form id="newItemForm" method="dialog">
             <h3>Create New Item</h3>
             <label for="itemType">Type:</label>
@@ -73,10 +120,9 @@
         </form>
     </dialog>
 
-    <!-- Firebase Compat SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <!-- FIX: Replaced app.css script tag with app.js -->
     <script src="app.js"></script>
 </body>
 </html>

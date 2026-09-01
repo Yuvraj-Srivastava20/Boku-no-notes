@@ -1,34 +1,82 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const createRoomBtn = document.getElementById("create-room-btn");
-    const joinRoomBtn = document.getElementById("join-room-btn");
-    const joinModal = document.getElementById("join-modal");
-    const closeModalBtn = document.getElementById("close-modal-btn");
-    const confirmJoinBtn = document.getElementById("confirm-join-btn");
-    const roomCodeInput = document.getElementById("room-code-input");
+    const brandTitleLink = document.getElementById("brandTitleLink");
+    const openCreateModalBtn = document.getElementById("openCreateModalBtn");
+    const openJoinModalBtn = document.getElementById("openJoinModalBtn");
+    
+    const createRoomModal = document.getElementById("createRoomModal");
+    const createRoomForm = document.getElementById("createRoomForm");
+    const btnTypeRandom = document.getElementById("btnTypeRandom");
+    const btnTypeCustom = document.getElementById("btnTypeCustom");
+    const customNameContainer = document.getElementById("customNameContainer");
+    const customRoomInput = document.getElementById("customRoomInput");
+    const cancelCreateBtn = document.getElementById("cancelCreateBtn");
 
-    // 1. Create New Room: Generate random room code and redirect with query param
-    createRoomBtn.addEventListener("click", () => {
-        const newCode = "NOTE-" + Math.floor(1000 + Math.random() * 9000);
-        window.location.href = `app.html?room=${newCode}`;
+    const joinRoomModal = document.getElementById("joinRoomModal");
+    const joinRoomForm = document.getElementById("joinRoomForm");
+    const joinRoomInput = document.getElementById("joinRoomInput");
+    const cancelJoinBtn = document.getElementById("cancelJoinBtn");
+
+    let selectedCreationType = "random"; // Default selection
+
+    if (brandTitleLink) {
+        brandTitleLink.addEventListener("click", () => {
+            window.location.href = "index.html";
+        });
+    }
+
+    openCreateModalBtn.addEventListener("click", () => createRoomModal.showModal());
+    cancelCreateBtn.addEventListener("click", () => createRoomModal.close());
+
+    openJoinModalBtn.addEventListener("click", () => joinRoomModal.showModal());
+    cancelJoinBtn.addEventListener("click", () => joinRoomModal.close());
+
+    // Toggle between Random and Custom buttons
+    btnTypeRandom.addEventListener("click", () => {
+        selectedCreationType = "random";
+        btnTypeRandom.classList.add("active");
+        btnTypeCustom.classList.remove("active");
+        customNameContainer.classList.add("hidden");
     });
 
-    // 2. Open & Close Join Modal
-    joinRoomBtn.addEventListener("click", () => {
-        joinModal.classList.remove("hidden");
+    btnTypeCustom.addEventListener("click", () => {
+        selectedCreationType = "custom";
+        btnTypeCustom.classList.add("active");
+        btnTypeRandom.classList.remove("active");
+        customNameContainer.classList.remove("hidden");
+        customRoomInput.focus();
     });
 
-    closeModalBtn.addEventListener("click", () => {
-        joinModal.classList.add("hidden");
-    });
+    function generate16CharRoomCode() {
+        const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+        let code = "";
+        for (let i = 0; i < 16; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return "ROOM-" + code;
+    }
 
-    // 3. Confirm Join Existing Room
-    confirmJoinBtn.addEventListener("click", () => {
-        const inputCode = roomCodeInput.value.trim();
-        if (inputCode) {
-            const formattedCode = inputCode.startsWith("NOTE-") ? inputCode : "NOTE-" + inputCode;
-            window.location.href = `app.html?room=${formattedCode}`;
+    createRoomForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        let targetCode = "";
+        if (selectedCreationType === "custom") {
+            const val = customRoomInput.value.trim();
+            if (!val) {
+                alert("Please enter a custom room name!");
+                return;
+            }
+            targetCode = 'ROOM-' + val.replace(/\s+/g, '-').toLowerCase();
         } else {
-            alert("Please enter a valid room code!");
+            targetCode = generate16CharRoomCode();
+        }
+        window.location.href = `app.html?room=${targetCode}`;
+    });
+
+    joinRoomForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const code = joinRoomInput.value.trim();
+        if (code) {
+            const formattedCode = code.startsWith("ROOM-") ? code : `ROOM-${code}`;
+            window.location.href = `app.html?room=${formattedCode}`;
         }
     });
 });

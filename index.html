@@ -5,37 +5,85 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Boku No Notes - Home</title>
     <link rel="stylesheet" href="home.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
-<body data-theme="dark">
-
+<body>
     <header>
-        <div class="brand">
-            <h1>Boku No Notes</h1>
-        </div>
+        <span class="brand-link" id="brandTitleLink">Boku No Notes</span>
     </header>
 
     <main class="hero-section">
-        <h1 class="hero-title">Boku No Notes</h1>
-        <p class="hero-subtitle">Your personal real-time cloud markdown & checklist workspace.</p>
+        <h1 class="hero-title">Real-Time Collaborative Notes & Lists</h1>
+        <p class="hero-subtitle">Create private rooms, write Markdown, track checklists, and keep your workspace organized.</p>
 
-        <div class="room-actions">
-            <button type="button" id="create-room-btn" class="btn-primary">Create New Room</button>
-            <button type="button" id="join-room-btn" class="btn-secondary">Join Existing Room</button>
+        <div class="main-actions">
+            <button id="openCreateModalBtn" class="btn-primary">
+                <i class="fa-solid fa-plus"></i> Create a Room
+            </button>
+            <button id="openJoinModalBtn" class="btn-secondary">
+                <i class="fa-solid fa-link"></i> Join Existing Room
+            </button>
         </div>
+
+        <section class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fa-solid fa-lock"></i></div>
+                <h3>Private Rooms</h3>
+                <p>Isolated room spaces secured to your anonymous session or account.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fa-solid fa-bolt"></i></div>
+                <h3>Instant Checklisting</h3>
+                <p>Write notes or checkable task lists with line numbering.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fa-solid fa-clipboard"></i></div>
+                <h3>Side-by-Side Clipboard</h3>
+                <p>Copy snippets anywhere to store them in your workspace drawer.</p>
+            </div>
+        </section>
     </main>
 
-    <!-- Modal for Joining Existing Room -->
-    <div id="join-modal" class="modal-overlay hidden">
-        <div class="modal-card">
-            <h3>Join Existing Room</h3>
-            <p>Enter your 4-digit room code below:</p>
-            <input type="text" id="room-code-input" placeholder="e.g. 8492" maxlength="6">
-            <div class="modal-buttons">
-                <button type="button" id="confirm-join-btn" class="btn-primary">Join Room</button>
-                <button type="button" id="close-modal-btn" class="btn-secondary">Cancel</button>
+    <!-- Create Room Modal Dialog with Two Option Buttons -->
+    <dialog id="createRoomModal" class="pop-in">
+        <form id="createRoomForm" method="dialog">
+            <h3>Create a Room</h3>
+            <p class="modal-label">Select Room Type:</p>
+            
+            <div class="room-type-toggle">
+                <button type="button" id="btnTypeRandom" class="toggle-btn active">
+                    <i class="fa-solid fa-dice"></i> Random Room
+                </button>
+                <button type="button" id="btnTypeCustom" class="toggle-btn">
+                    <i class="fa-solid fa-pen"></i> Custom Room
+                </button>
             </div>
-        </div>
-    </div>
+
+            <div id="customNameContainer" class="hidden">
+                <label for="customRoomInput">Custom Room Name:</label>
+                <input type="text" id="customRoomInput" placeholder="e.g. my-private-notes">
+            </div>
+
+            <div class="dialog-actions">
+                <button type="button" id="cancelCreateBtn" class="btn-cancel">Cancel</button>
+                <button type="submit" class="btn-primary">Create & Open</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- Join Room Modal Dialog -->
+    <dialog id="joinRoomModal" class="pop-in">
+        <form id="joinRoomForm" method="dialog">
+            <h3>Join Existing Room</h3>
+            <label for="joinRoomInput">Enter Room Code:</label>
+            <input type="text" id="joinRoomInput" placeholder="ROOM-xxxx..." required>
+
+            <div class="dialog-actions">
+                <button type="button" id="cancelJoinBtn" class="btn-cancel">Cancel</button>
+                <button type="submit" class="btn-primary">Join Room</button>
+            </div>
+        </form>
+    </dialog>
 
     <script src="home.js"></script>
 </body>
