@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boku No Notes - Workspace</title>
+    <link rel="stylesheet" href="app.css">
+    <!-- Marked.js for Markdown Rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body class="dark-theme">
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>Boku No Notes</h2>
+                <div class="sidebar-actions">
+                    <button id="themeToggleBtn" title="Toggle Theme">☀️ / 🌙</button>
+                    <button id="newBtn" title="New Note/List">+</button>
+                </div>
+            </div>
+
+            <!-- Find/Search Note -->
+            <div class="search-box">
+                <input type="text" id="findNoteInput" placeholder="Enter title here (Press Enter)...">
+            </div>
+
+            <div class="room-info">
+                <span>Room Code: <strong id="roomCodeDisplay">---</strong></span>
+            </div>
+
+            <div class="notes-list" id="notesList">
+                <!-- Dynamically populated notes -->
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="workspace" id="workspace">
+            <div class="workspace-empty" id="emptyState">
+                <p>No note open. Select a note from the sidebar or click '+' to create one.</p>
+            </div>
+
+            <div class="workspace-active hidden" id="activeWorkspace">
+                <div class="workspace-header">
+                    <h1 id="currentNoteTitle">Untitled</h1>
+                    <span id="syncStatus" class="status-saved">Saved</span>
+                </div>
+                <div class="editor-container">
+                    <textarea id="editor" placeholder="Write markdown here..."></textarea>
+                    <div id="output" class="markdown-preview"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- New Item Dialog -->
+    <dialog id="newItemModal">
+        <form id="newItemForm" method="dialog">
+            <h3>Create New Item</h3>
+            <label for="itemType">Type:</label>
+            <select id="itemType">
+                <option value="note">Note</option>
+                <option value="list">List</option>
+            </select>
+            
+            <label for="itemName">Name:</label>
+            <input type="text" id="itemName" placeholder="Enter name of note or list" required>
+
+            <div class="dialog-actions">
+                <button type="button" id="cancelDialogBtn">Cancel</button>
+                <button type="submit" id="createDialogBtn">Create</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- Firebase Compat SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="app.css"></script>
+</body>
+</html>

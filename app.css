@@ -1,0 +1,189 @@
+/* Base Styles & CSS Variables */
+:root {
+    --bg-primary: #1e1e2e;
+    --bg-secondary: #252538;
+    --text-primary: #cdd6f4;
+    --text-secondary: #a6adc8;
+    --accent: #89b4fa;
+    --border: #45475a;
+    --input-bg: #313244;
+}
+
+body.light-theme {
+    --bg-primary: #eff1f5;
+    --bg-secondary: #e6e9ef;
+    --text-primary: #4c4f69;
+    --text-secondary: #6c6f85;
+    --accent: #1e66f5;
+    --border: #ccd0da;
+    --input-bg: #bcc0cc;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    height: 100vh;
+    overflow: hidden;
+}
+
+.app-container {
+    display: flex;
+    height: 100vh;
+}
+
+/* Sidebar Styling */
+.sidebar {
+    width: 280px;
+    background-color: var(--bg-secondary);
+    border-right: 1px solid var(--border);
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sidebar-actions button {
+    background: var(--input-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: var(--input-bg);
+    color: var(--text-primary);
+}
+
+.room-info {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.notes-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.note-item {
+    padding: 10px;
+    border-radius: 5px;
+    background: var(--input-bg);
+    cursor: pointer;
+}
+
+.note-item.active {
+    border-left: 4px solid var(--accent);
+}
+
+/* Workspace Styling */
+.workspace {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.workspace-empty {
+    margin: auto;
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+}
+
+.workspace-active {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.workspace-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.editor-container {
+    display: flex;
+    flex-grow: 1;
+    gap: 15px;
+}
+
+#editor, .markdown-preview {
+    flex: 1;
+    height: 100%;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    overflow-y: auto;
+}
+
+#editor {
+    resize: none;
+    outline: none;
+    font-family: monospace;
+}
+
+/* Status Indicators */
+.status-typing { color: #f9e2af; }
+.status-saving { color: #89b4fa; }
+.status-saved { color: #a6e3a1; }
+
+/* Utility Classes */
+.hidden {
+    display: none !important;
+}
+
+/* Dialog Box */
+dialog {
+    margin: auto;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+dialog form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+dialog input, dialog select {
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: var(--input-bg);
+    color: var(--text-primary);
+}
+
+.dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 10px;
+}
