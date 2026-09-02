@@ -11,9 +11,6 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-// Authenticate user anonymously
-auth.signInAnonymously().catch(err => console.error("Auth error:", err));
-
 // DOM Elements
 const brandTitle = document.getElementById("brandTitle");
 const roomCodeDisplay = document.getElementById("roomCodeDisplay");
@@ -49,7 +46,7 @@ const clipboardPanel = document.getElementById("clipboardPanel");
 const clipboardItems = document.getElementById("clipboardItems");
 const clipCount = document.getElementById("clipCount");
 
-const defaultReadmeContent = `# 📝 Welcome to Boku No Notes!
+const defaultReadmeContent = `# Welcome to Boku No Notes!
 
 Here is how to get started with your workspace:
 
@@ -58,6 +55,21 @@ Here is how to get started with your workspace:
 3. **Resizing Workspace**: Click and drag the thin bar between the text area and preview to adjust widths.
 4. **Visibility Controls**: Use the header buttons (Text Area, Preview Area) to toggle views.
 5. **Clipboard Drawer**: Copy text anywhere on the page to store clips in your side panel for 1-click insertion.
+
+---
+
+### Text Formatting Guide
+
+You can format your notes using standard **Markdown syntax**:
+
+* **Bold**: Wrap text in double asterisks like \`**bold text**\` -> **bold text**
+* *Italics*: Wrap text in single asterisks like \`*italic text*\` -> *italic text*
+* ~~Strikethrough~~: Wrap text in double tildes like \`~~strikethrough~~\` -> ~~strikethrough~~
+* \`Inline Code\`: Wrap text in single backticks like \\\`code\\\` -> \`code\`
+* **Headers**: Start a line with \`#\` for Heading 1, \`##\` for Heading 2, or \`###\` for Heading 3.
+* **Blockquotes**: Start a line with \`>\` to create a quoted block.
+* **Bullet Lists**: Start lines with \`*\` or \`-\` followed by a space.
+* **Numbered Lists**: Start lines with numbers like \`1.\`, \`2.\`, etc.
 `;
 
 // Global State
@@ -89,6 +101,22 @@ if (brandTitle) {
     });
 }
 
+// Visual Line Numbers Generator
+function updateLineNumbers() {
+    if (!editor || !lineNumbers) return;
+
+    // Split text into lines strictly by newline characters
+    const lines = editor.value.split('\n');
+
+    // Generate 1-to-1 line numbers without mirror div calculations
+    let numberHtml = '';
+    for (let i = 0; i < lines.length; i++) {
+        numberHtml += `<div>${i + 1}</div>`;
+    }
+
+    lineNumbers.innerHTML = numberHtml;
+}
+
 // Styling Controls
 function applyEditorStyles() {
     if (!editor || !lineNumbers || !output) return;
@@ -106,24 +134,19 @@ function applyEditorStyles() {
     output.style.fontSize = selectedSize;
     output.style.fontFamily = selectedFamily;
     output.style.color = selectedColor;
+
+    updateLineNumbers();
 }
 
 if (fontSizeSelect) fontSizeSelect.addEventListener("change", applyEditorStyles);
 if (fontStyleSelect) fontStyleSelect.addEventListener("change", applyEditorStyles);
 if (textColorPicker) textColorPicker.addEventListener("input", applyEditorStyles);
 
-// Line Numbers
+// Line Numbers and Auto-Sync
 if (editor) {
     editor.addEventListener('input', () => {
-        const lines = editor.value.split('\n').length;
-        if (lineNumbers) lineNumbers.innerHTML = Array.from({ length: lines }, (_, i) => i + 1).join('<br>');
-    });
+        updateLineNumbers();
 
-    editor.addEventListener('scroll', () => {
-        if (lineNumbers) lineNumbers.scrollTop = editor.scrollTop;
-    });
-
-    editor.addEventListener("input", () => {
         if (!activeNoteId) return;
 
         if (syncStatus) {
@@ -141,66 +164,75 @@ if (editor) {
             }
         }, 1000);
     });
+
+    editor.addEventListener('scroll', () => {
+        if (lineNumbers) lineNumbers.scrollTop = editor.scrollTop;
+    });
+
+    if (window.ResizeObserver) {
+        new ResizeObserver(updateLineNumbers).observe(editor);
+    }
 }
 
-// Firebase Realtime Listener
-auth.onAuthStateChanged((user) => {
-    if (!user) return;
+// Firebase Auth & Real-Time Sync
+auth.signInAnonymously()
+    .then(() => {
+        auth.onAuthStateChanged((user) => {
+            if (!user) return;
 
-    const roomRef = db.collection("bokuNoNotesRooms").doc(currentRoom);
+            const roomRef = db.collection("bokuNoNotesRooms").doc(currentRoom);
 
-    roomRef.onSnapshot(async (doc) => {
-        if (doc.exists) {
-            const data = doc.data();
-            if (data.ownerId && data.ownerId !== user.uid) {
-                alert("Access Denied: You do not have permission to access this room.");
-                window.location.href = "index.html";
-                return;
-            }
-            notesData = data.notes || {};
-
-            // If room document exists but contains no items, generate Readme
-            if (Object.keys(notesData).length === 0) {
-                notesData = {
-                    "readme_note": {
-                        title: "README - Instructions",
-                        type: "note",
-                        content: defaultReadmeContent
+            roomRef.onSnapshot(async (doc) => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    if (data.ownerId && data.ownerId !== user.uid) {
+                        alert("Access Denied: You do not have permission to access this room.");
+                        window.location.href = "index.html";
+                        return;
                     }
-                };
-                await roomRef.update({ notes: notesData });
-            }
-        } else {
-            // Initialize new room with Readme
-            notesData = {
-                "readme_note": {
-                    title: "README - Instructions",
-                    type: "note",
-                    content: defaultReadmeContent
+                    notesData = data.notes || {};
+
+                    if (Object.keys(notesData).length === 0) {
+                        notesData = {
+                            "readme_note": {
+                                title: "README - Instructions",
+                                type: "note",
+                                content: defaultReadmeContent
+                            }
+                        };
+                        await roomRef.update({ notes: notesData });
+                    }
+                } else {
+                    notesData = {
+                        "readme_note": {
+                            title: "README - Instructions",
+                            type: "note",
+                            content: defaultReadmeContent
+                        }
+                    };
+                    await roomRef.set({ ownerId: user.uid, notes: notesData });
                 }
-            };
-            await roomRef.set({ ownerId: user.uid, notes: notesData });
-        }
 
-        renderNotesList();
+                renderNotesList();
 
-        const noteKeys = Object.keys(notesData);
-        if (noteKeys.length > 0) {
-            // Open active note or fallback to first note
-            const targetId = (activeNoteId && notesData[activeNoteId]) ? activeNoteId : noteKeys[0];
-            openNote(targetId);
-        } else {
-            closeWorkspace();
-        }
-    }, (error) => {
-        if (error.code === 'permission-denied') {
-            alert("Access Denied: This room belongs to another user.");
-            window.location.href = "index.html";
-        }
-    });
-});
+                const noteKeys = Object.keys(notesData);
+                if (noteKeys.length > 0) {
+                    const targetId = (activeNoteId && notesData[activeNoteId]) ? activeNoteId : noteKeys[0];
+                    openNote(targetId);
+                } else {
+                    closeWorkspace();
+                }
+            }, (error) => {
+                if (error.code === 'permission-denied') {
+                    alert("Access Denied: This room belongs to another user.");
+                    window.location.href = "index.html";
+                }
+            });
+        });
+    })
+    .catch(err => console.error("Auth error:", err));
 
-// UI Dialogs & Room Operations
+// UI Controls
 if (newBtn) {
     newBtn.addEventListener("click", () => {
         itemNameInput.value = "";
@@ -223,7 +255,7 @@ if (newItemForm) {
 
         const noteId = "item_" + Date.now();
         const defaultContent = type === "list" 
-            ? "Task Item 1\n  Nested Task Item\nTask Item 2" 
+            ? "Task Item 1\nTask Item 2\nTask Item 3" 
             : "";
 
         notesData[noteId] = { title, type, content: defaultContent };
@@ -242,7 +274,8 @@ function renderNotesList() {
         div.className = `note-item ${id === activeNoteId ? "active" : ""}`;
 
         const titleSpan = document.createElement("span");
-        titleSpan.textContent = `${item.type === "list" ? "📋" : "📝"} ${item.title}`;
+        const iconClass = item.type === "list" ? "fa-list-check" : "fa-file-lines";
+        titleSpan.innerHTML = `<i class="fa-solid ${iconClass}"></i> ${item.title}`;
         titleSpan.addEventListener("click", () => openNote(id));
 
         const delBtn = document.createElement("button");
@@ -270,11 +303,7 @@ function openNote(id) {
     if (emptyState) emptyState.classList.add("hidden");
     if (activeWorkspace) activeWorkspace.classList.remove("hidden");
 
-    if (editor && lineNumbers) {
-        const lines = editor.value.split('\n').length;
-        lineNumbers.innerHTML = Array.from({ length: lines }, (_, i) => i + 1).join('<br>');
-    }
-
+    updateLineNumbers();
     applyEditorStyles();
     renderContent();
     renderNotesList();
@@ -287,7 +316,7 @@ function closeWorkspace() {
 }
 
 function deleteNote(noteId) {
-    if (confirm("Are you sure you want to delete this note?")) {
+    if (confirm("Are you sure you want to delete this item?")) {
         delete notesData[noteId];
         if (activeNoteId === noteId) {
             closeWorkspace();
@@ -305,19 +334,33 @@ if (changeRoomBtn) {
         if (formattedNewCode === currentRoom) return;
 
         const user = auth.currentUser;
+        if (!user) return;
+
+        // 1. Clear auto-save timer
+        if (saveTimeout) clearTimeout(saveTimeout);
+
+        // 2. Unsubscribe active real-time listener
+        if (typeof roomUnsubscribe === 'function') {
+            roomUnsubscribe();
+            roomUnsubscribe = null;
+        }
 
         try {
+            // 3. Create/Copy data to the new room document
             await db.collection("bokuNoNotesRooms").doc(formattedNewCode).set({ 
                 ownerId: user.uid, 
                 notes: notesData,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
+            // 4. Delete old room and explicitly await server confirmation
             await db.collection("bokuNoNotesRooms").doc(currentRoom).delete();
-            window.location.href = `app.html?room=${formattedNewCode}`;
+
+            // 5. Navigate only after deletion promise resolves
+            window.location.assign(`app.html?room=${formattedNewCode}`);
         } catch (err) {
-            console.error("Error migrating room:", err);
-            window.location.href = `app.html?room=${formattedNewCode}`;
+            console.error("Migration error:", err);
+            alert("Error updating room in database: " + err.message);
         }
     });
 }
@@ -362,8 +405,8 @@ function renderAutoFormattedList(text) {
         if (!line.trim()) return;
 
         const rawText = line.trim();
-        const isChecked = rawText.startsWith("~") || rawText.startsWith("[x]");
-        const cleanContent = rawText.replace(/^[-~]|^\s*\[(x| )\]\s*/, "").trim();
+        const isChecked = rawText.startsWith("~") || /^\[x\]/i.test(rawText);
+        const cleanContent = rawText.replace(/^(~|\[(x| )\])\s*/i, "").trim();
 
         html += `
             <li class="checklist-item">
@@ -384,11 +427,11 @@ function renderAutoFormattedList(text) {
 
             if (e.target.checked) {
                 if (!targetLine.trim().startsWith("~")) {
-                    const indent = targetLine.match(/^ */)[0];
+                    const indent = targetLine.match(/^\s*/)[0];
                     targetLine = indent + "~ " + targetLine.trim();
                 }
             } else {
-                const indent = targetLine.match(/^ */)[0];
+                const indent = targetLine.match(/^\s*/)[0];
                 targetLine = indent + targetLine.trim().replace(/^~\s*/, "");
             }
 
@@ -428,7 +471,8 @@ function saveRoomData() {
 let isDragging = false;
 
 if (dragResizer) {
-    dragResizer.addEventListener("mousedown", () => {
+    dragResizer.addEventListener("mousedown", (e) => {
+        e.preventDefault();
         isDragging = true;
         document.body.style.cursor = "col-resize";
     });
@@ -444,6 +488,7 @@ document.addEventListener("mousemove", (e) => {
 
     if (percentage > 15 && percentage < 85 && editorPane) {
         editorPane.style.flex = `0 0 ${percentage}%`;
+        updateLineNumbers();
     }
 });
 
@@ -457,15 +502,45 @@ document.addEventListener("mouseup", () => {
 // Panel Toggles
 if (toggleEditorPaneBtn) {
     toggleEditorPaneBtn.addEventListener("click", () => {
-        if (editorPane) editorPane.classList.toggle("hidden");
-        if (dragResizer) dragResizer.classList.toggle("hidden");
+        if (!editorPane) return;
+        
+        editorPane.classList.toggle("hidden");
+        
+        if (editorPane.classList.contains("hidden")) {
+            if (dragResizer) dragResizer.classList.add("hidden");
+            if (output) output.style.flex = "1 1 100%";
+        } else {
+            if (output && !output.classList.contains("hidden")) {
+                if (dragResizer) dragResizer.classList.remove("hidden");
+                editorPane.style.flex = "1 1 50%";
+                output.style.flex = "1 1 50%";
+            } else {
+                editorPane.style.flex = "1 1 100%";
+            }
+            updateLineNumbers();
+        }
     });
 }
 
 if (togglePreviewPaneBtn) {
     togglePreviewPaneBtn.addEventListener("click", () => {
-        if (output) output.classList.toggle("hidden");
-        if (dragResizer) dragResizer.classList.toggle("hidden");
+        if (!output) return;
+
+        output.classList.toggle("hidden");
+
+        if (output.classList.contains("hidden")) {
+            if (dragResizer) dragResizer.classList.add("hidden");
+            if (editorPane) editorPane.style.flex = "1 1 100%";
+        } else {
+            if (editorPane && !editorPane.classList.contains("hidden")) {
+                if (dragResizer) dragResizer.classList.remove("hidden");
+                editorPane.style.flex = "1 1 50%";
+                output.style.flex = "1 1 50%";
+            } else {
+                output.style.flex = "1 1 100%";
+            }
+        }
+        updateLineNumbers();
     });
 }
 
@@ -513,6 +588,7 @@ function updateClipboardUI() {
             const start = editor.selectionStart;
             const end = editor.selectionEnd;
             editor.value = editor.value.substring(0, start) + clip + editor.value.substring(end);
+            updateLineNumbers();
             renderContent();
             notesData[activeNoteId].content = editor.value;
             saveRoomData();

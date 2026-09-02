@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Boku No Notes - Home</title>
+    <title>Boku-No-Notes - Home</title>
     <link rel="stylesheet" href="home.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
 </head>
 <body>
     <header>
-        <span class="brand-link" id="brandTitleLink">Boku No Notes</span>
+        <span class="brand-link" id="brandTitleLink"><i class="fa-solid fa-book" style="color: #89b4fa;"></i> Boku-No-Notes</span>
     </header>
 
     <main class="hero-section">
@@ -44,9 +44,10 @@
         </section>
     </main>
 
-    <!-- Create Room Modal Dialog with Two Option Buttons -->
+    <!-- Create Room Modal Dialog -->
     <dialog id="createRoomModal" class="pop-in">
-        <form id="createRoomForm" method="dialog">
+        <!-- REMOVED method="dialog" -->
+        <form id="createRoomForm">
             <h3>Create a Room</h3>
             <p class="modal-label">Select Room Type:</p>
             
@@ -73,7 +74,8 @@
 
     <!-- Join Room Modal Dialog -->
     <dialog id="joinRoomModal" class="pop-in">
-        <form id="joinRoomForm" method="dialog">
+        <!-- REMOVED method="dialog" -->
+        <form id="joinRoomForm">
             <h3>Join Existing Room</h3>
             <label for="joinRoomInput">Enter Room Code:</label>
             <input type="text" id="joinRoomInput" placeholder="ROOM-xxxx..." required>
@@ -85,6 +87,10 @@
         </form>
     </dialog>
 
-    <script src="home.js"></script>
-</body>
+<!-- Firebase App and Firestore SDKs -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<!-- Your JS File -->
+<script src="home.js"></script></body>
 </html>

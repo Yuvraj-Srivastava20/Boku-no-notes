@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Boku No Notes - Workspace</title>
+    <title>Boku-No-Notes - Workspace</title>
     <link rel="stylesheet" href="app.css">
+    <!-- Font Awesome added for cross-browser icon support -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body data-theme="dark">
@@ -12,24 +14,24 @@
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <h2 id="brandTitle">Boku No Notes</h2>
+                <h2 id="brandTitle"><i class="fa-solid fa-book" style="color: #89b4fa;"></i> Boku-No-Notes</h2>
             </div>
 
             <div class="search-box">
-                <input type="text" id="findNoteInput" placeholder="Enter title here (Press Enter)...">
+                <input type="text" id="findNoteInput" placeholder="Search title (Press Enter)...">
             </div>
 
             <div class="room-info">
                 <span>Room: <strong id="roomCodeDisplay">---</strong></span>
-                <button id="changeRoomBtn" class="btn-room-change" title="Change Room Code">⚙️ Edit Room</button>
+                <button id="changeRoomBtn" class="btn-room-change" title="Change Room Code"><i class="fa-solid fa-gear"></i> Edit</button>
             </div>
 
             <hr class="sidebar-divider">
-            <button id="newBtn" class="sidebar-add-btn" title="New Note/List">+ New Item</button>
+            <button id="newBtn" class="sidebar-add-btn" title="New Note/List"><i class="fa-solid fa-plus"></i> New Item</button>
             <div class="notes-list" id="notesList"></div>
 
             <div class="sidebar-footer">
-                <button id="themeToggleBtn" title="Toggle Theme">☀️ / 🌙 Theme</button>
+                <button id="themeToggleBtn" title="Toggle Theme"><i class="fa-solid fa-circle-half-stroke"></i> Switch Theme</button>
             </div>
         </aside>
 
@@ -60,7 +62,7 @@
                             <option value="sans-serif">Sans-Serif</option>
                             <option value="serif">Serif</option>
                             <option value="monospace">Monospace</option>
-                            <option value="cursive" selected>Cursive</option>
+                            <option value="cursive">Cursive</option>
                         </select>
                     </label>
                     <label>Text Color:
@@ -68,9 +70,9 @@
                     </label>
                     
                     <div class="panel-toggle-controls">
-                        <button id="toggleEditorPaneBtn" class="btn-panel-toggle" title="Toggle Editor">📝 Text Area</button>
-                        <button id="togglePreviewPaneBtn" class="btn-panel-toggle" title="Toggle Preview">👁️ Preview Area</button>
-                        <button id="toggleClipboardBtn" class="btn-panel-toggle" title="Toggle Side Clipboard">📋 Clipboard (<span id="clipCount">0</span>)</button>
+                        <button id="toggleEditorPaneBtn" class="btn-panel-toggle" title="Toggle Editor"><i class="fa-solid fa-pen-to-square"></i> Editor</button>
+                        <button id="togglePreviewPaneBtn" class="btn-panel-toggle" title="Toggle Preview"><i class="fa-solid fa-eye"></i> Preview</button>
+                        <button id="toggleClipboardBtn" class="btn-panel-toggle" title="Toggle Side Clipboard"><i class="fa-solid fa-clipboard"></i> Clipboard (<span id="clipCount">0</span>)</button>
                     </div>
                 </div>
 
@@ -90,7 +92,7 @@
                     <!-- Side-by-Side Collapsible Clipboard Panel -->
                     <aside id="clipboardPanel" class="clipboard-panel hidden">
                         <div class="clipboard-header">
-                            <h3>Clipboard History</h3>
+                            <h3><i class="fa-solid fa-paste"></i> Clipboard History</h3>
                             <button id="closeClipboardBtn" class="close-panel-btn">&times;</button>
                         </div>
                         <div id="clipboardItems" class="clipboard-items-list"></div>
@@ -114,8 +116,8 @@
             <input type="text" id="itemName" placeholder="Enter name of note or list" required>
 
             <div class="dialog-actions">
-                <button type="button" id="cancelDialogBtn">Cancel</button>
-                <button type="submit" id="createDialogBtn">Create</button>
+                <button type="button" id="cancelDialogBtn" class="btn-cancel">Cancel</button>
+                <button type="submit" id="createDialogBtn" class="btn-primary">Create</button>
             </div>
         </form>
     </dialog>

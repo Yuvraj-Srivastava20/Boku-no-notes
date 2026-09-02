@@ -50,6 +50,7 @@ body {
 .sidebar-header h2 {
     cursor: pointer;
     display: inline-block;
+    color: var(--accent);
 }
 
 .search-box input {
@@ -97,6 +98,15 @@ body {
     align-items: center;
 }
 
+.note-item span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .note-item.active {
     border-left: 4px solid var(--accent);
 }
@@ -105,8 +115,9 @@ body {
     background: transparent;
     border: none;
     color: #f38ba8;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     cursor: pointer;
+    padding: 0 4px;
 }
 
 .workspace {
@@ -144,6 +155,7 @@ body {
     padding: 8px 12px;
     border-radius: 6px;
     border: 1px solid var(--border);
+    flex-wrap: wrap;
 }
 
 .text-toolbar select, .text-toolbar input[type="color"] {
@@ -176,6 +188,7 @@ body {
     flex-grow: 1;
     gap: 10px;
     height: calc(100% - 100px);
+    min-width: 0;
 }
 
 .editor-container {
@@ -183,6 +196,7 @@ body {
     flex: 1;
     height: 100%;
     overflow: hidden;
+    min-width: 0;
 }
 
 .editor-wrapper {
@@ -200,10 +214,17 @@ body {
     padding: 10px 5px;
     background-color: var(--input-bg);
     color: var(--text-secondary);
-    line-height: 1.5;
     text-align: right;
     user-select: none;
     border-right: 1px solid var(--border);
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+/* Set height specifically for the child divs inside line-numbers */
+.line-numbers div {
+    height: 24px;
+    line-height: 24px;
 }
 
 #note-editor {
@@ -214,9 +235,13 @@ body {
     border: none;
     outline: none;
     resize: none;
-    line-height: 1.5;
-    white-space: pre-wrap;
-    word-wrap: break-word;
+    font-family: monospace;
+    font-size: 1rem;
+    line-height: 24px;
+    white-space: pre;       /* Keeps text strictly 1-to-1 with line numbers */
+    overflow-x: auto;       /* Enables horizontal scroll for long lines */
+    overflow-y: auto;       /* Enables vertical scroll */
+    box-sizing: border-box;
 }
 
 /* Drag Resizer Bar */
@@ -225,6 +250,7 @@ body {
     background: var(--border);
     cursor: col-resize;
     transition: background 0.2s;
+    user-select: none;
 }
 
 .resizer:hover {
@@ -240,7 +266,9 @@ body {
     background: var(--bg-secondary);
     overflow-y: auto;
     white-space: pre-wrap;
-    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    min-width: 0;
 }
 
 .clipboard-panel {
@@ -372,6 +400,26 @@ dialog input, dialog select {
     justify-content: flex-end;
     gap: 10px;
     margin-top: 10px;
+}
+
+.btn-cancel {
+    background-color: #f38ba8;
+    color: #111;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.btn-primary {
+    background-color: var(--accent);
+    color: #111;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
 }
 
 .sidebar-divider {

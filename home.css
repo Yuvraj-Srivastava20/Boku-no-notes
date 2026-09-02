@@ -145,7 +145,6 @@ dialog form {
     opacity: 0.85;
 }
 
-/* Room Type Two-Button Toggle */
 .room-type-toggle {
     display: flex;
     gap: 10px;
@@ -183,7 +182,6 @@ dialog input {
     width: 100%;
 }
 
-/* Action & Cancel Buttons */
 .dialog-actions {
     display: flex;
     justify-content: flex-end;
