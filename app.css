@@ -125,6 +125,7 @@ body {
     display: flex;
     flex-direction: column;
     padding: 20px;
+    overflow: hidden;
 }
 
 .workspace-empty {
@@ -221,7 +222,6 @@ body {
     box-sizing: border-box;
 }
 
-/* Set height specifically for the child divs inside line-numbers */
 .line-numbers div {
     height: 24px;
     line-height: 24px;
@@ -238,9 +238,9 @@ body {
     font-family: monospace;
     font-size: 1rem;
     line-height: 24px;
-    white-space: pre;       /* Keeps text strictly 1-to-1 with line numbers */
-    overflow-x: auto;       /* Enables horizontal scroll for long lines */
-    overflow-y: auto;       /* Enables vertical scroll */
+    white-space: pre;
+    overflow-x: auto;
+    overflow-y: auto;
     box-sizing: border-box;
 }
 
@@ -422,6 +422,13 @@ dialog input, dialog select {
     font-weight: bold;
 }
 
+.btn-primary:disabled {
+    background-color: #45475a;
+    color: #7f849c;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
 .sidebar-divider {
     border: none;
     border-top: 1px solid var(--border);
@@ -452,4 +459,188 @@ dialog input, dialog select {
     border: 1px solid var(--border);
     border-radius: 5px;
     cursor: pointer;
+}
+
+/* Modal Tab Navigation */
+.modal-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 8px;
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    padding: 6px 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.tab-btn.active {
+    background: #3b82f6;
+    color: #ffffff;
+}
+
+.tab-content.hidden {
+    display: none;
+}
+
+/* Mobile Menu Toggle Button */
+.mobile-menu-btn {
+    display: none;
+    background: #2563eb;
+    color: #ffffff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* Off-Canvas Overlay Background */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+
+/* ==========================================================================
+   Consolidated Mobile Responsiveness (max-width: 768px)
+   ========================================================================== */
+@media screen and (max-width: 768px) {
+    .mobile-menu-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* Fixed Off-Canvas Sidebar Drawer */
+    .sidebar {
+        position: fixed !important;
+        top: 0 !important;
+        left: -280px !important;
+        width: 260px !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        z-index: 1000 !important;
+        transition: left 0.3s ease-in-out !important;
+        background-color: var(--bg-secondary) !important;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+        border-right: 1px solid var(--border);
+        overflow-y: auto;
+    }
+
+    .sidebar.active {
+        left: 0 !important;
+    }
+
+    .sidebar-overlay.active {
+        display: block !important;
+    }
+
+    /* Editor Layout Adjustments */
+    .app-container {
+        flex-direction: column;
+    }
+
+    .workspace {
+        padding: 10px;
+    }
+
+    .main-editor-area {
+        flex-direction: column;
+        height: calc(100% - 120px);
+    }
+
+    .editor-container {
+        flex-direction: column !important;
+    }
+
+    .editor-wrapper, 
+    .markdown-preview {
+        width: 100% !important;
+        height: 50% !important;
+    }
+
+    .resizer {
+        display: none !important;
+    }
+
+    .text-toolbar {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .panel-toggle-controls {
+        width: 100%;
+        margin-top: 5px;
+        justify-content: space-between;
+    }
+
+    /* Fixed Slide-over Clipboard Drawer */
+    .clipboard-panel {
+        position: fixed !important;
+        top: 0 !important;
+        right: 0 !important;
+        width: 85% !important;
+        max-width: 320px !important;
+        height: 100vh !important;
+        z-index: 1000 !important;
+        background-color: var(--bg-secondary) !important;
+        box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+        padding: 15px !important;
+        overflow-y: auto !important;
+    }
+
+    .close-panel-btn {
+        display: block !important;
+        font-size: 24px !important;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .workspace-header h1 {
+        font-size: 1.2rem;
+    }
+
+    .text-toolbar label {
+        font-size: 0.8rem;
+    }
+
+    .btn-panel-toggle {
+        padding: 0.3rem 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    dialog {
+        width: 90% !important;
+    }
+}
+.sidebar-social-links {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    padding-top: 12px;
+}
+
+.sidebar-social-links a {
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.sidebar-social-links a:hover {
+    color: var(--accent);
+    transform: translateY(-2px);
 }

@@ -46,13 +46,12 @@
 
     <!-- Create Room Modal Dialog -->
     <dialog id="createRoomModal" class="pop-in">
-        <!-- REMOVED method="dialog" -->
         <form id="createRoomForm">
             <h3>Create a Room</h3>
             <p class="modal-label">Select Room Type:</p>
             
             <div class="room-type-toggle">
-                <button type="button" id="btnTypeRandom" class="toggle-btn active">
+                <button type="button" id="btnTypeRandom" class="toggle-btn">
                     <i class="fa-solid fa-dice"></i> Random Room
                 </button>
                 <button type="button" id="btnTypeCustom" class="toggle-btn">
@@ -63,22 +62,27 @@
             <div id="customNameContainer" class="hidden">
                 <label for="customRoomInput">Custom Room Name:</label>
                 <input type="text" id="customRoomInput" placeholder="e.g. my-private-notes">
+
+                <label for="roomPinInput">4-Digit PIN / Passcode:</label>
+                <input type="password" id="roomPinInput" maxlength="4" minlength="4" pattern="\d{4}" inputmode="numeric" placeholder="e.g. 1234">
             </div>
 
             <div class="dialog-actions">
                 <button type="button" id="cancelCreateBtn" class="btn-cancel">Cancel</button>
-                <button type="submit" class="btn-primary">Create & Open</button>
+                <button type="submit" id="submitCreateBtn" class="btn-primary" disabled>Create & Open</button>
             </div>
         </form>
     </dialog>
 
     <!-- Join Room Modal Dialog -->
     <dialog id="joinRoomModal" class="pop-in">
-        <!-- REMOVED method="dialog" -->
         <form id="joinRoomForm">
             <h3>Join Existing Room</h3>
-            <label for="joinRoomInput">Enter Room Code:</label>
-            <input type="text" id="joinRoomInput" placeholder="ROOM-xxxx..." required>
+            <label for="joinRoomInput">Enter Room Code / Name:</label>
+            <input type="text" id="joinRoomInput" placeholder="e.g. my-private-notes" required>
+
+            <label for="joinPinInput">Enter Room PIN:</label>
+            <input type="password" id="joinPinInput" maxlength="4" minlength="4" pattern="\d{4}" inputmode="numeric" placeholder="e.g. 1234" required>
 
             <div class="dialog-actions">
                 <button type="button" id="cancelJoinBtn" class="btn-cancel">Cancel</button>
@@ -86,11 +90,28 @@
             </div>
         </form>
     </dialog>
+    <footer class="main-footer">
+        <div class="footer-content">
+            <p>&copy; 2026 Boku-No-Notes. All rights reserved.</p>
+            <div class="footer-social-links">
+                <a href="https://github.com/Yuvraj-Srivastava20" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+                    <i class="fa-brands fa-github"></i>
+                </a>
+                <a href="https://linkedin.com/in/yuvraj-srivastava" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                    <i class="fa-brands fa-linkedin"></i>
+                </a>
+                <a href="mailto:srivastavayuvraj07@gmail.com" aria-label="Email">
+                    <i class="fa-solid fa-envelope"></i>
+                </a>
+            </div>
+        </div>
+    </footer>
+    <!-- Firebase App, Auth, and Firestore SDKs (v10.8.0 Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-<!-- Firebase App and Firestore SDKs -->
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-
-<!-- Your JS File -->
-<script src="home.js"></script></body>
+    <!-- Main JS File -->
+    <script src="home.js"></script>
+</body>
 </html>

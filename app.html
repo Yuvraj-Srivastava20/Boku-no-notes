@@ -1,14 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Boku-No-Notes - Workspace</title>
     <link rel="stylesheet" href="app.css">
     <!-- Font Awesome added for cross-browser icon support -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer">
+    <!-- Markdown Parser & DOMPurify Sanitizer -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js" crossorigin="anonymous"
+        referrerpolicy="no-referrer"></script>
 </head>
+
 <body data-theme="dark">
     <div class="app-container">
         <!-- Sidebar -->
@@ -23,15 +29,31 @@
 
             <div class="room-info">
                 <span>Room: <strong id="roomCodeDisplay">---</strong></span>
-                <button id="changeRoomBtn" class="btn-room-change" title="Change Room Code"><i class="fa-solid fa-gear"></i> Edit</button>
+                <button id="changeRoomBtn" class="btn-room-change" title="Change Room / PIN"><i
+                        class="fa-solid fa-gear"></i> Edit</button>
             </div>
 
             <hr class="sidebar-divider">
-            <button id="newBtn" class="sidebar-add-btn" title="New Note/List"><i class="fa-solid fa-plus"></i> New Item</button>
+            <button id="newBtn" class="sidebar-add-btn" title="New Note/List"><i class="fa-solid fa-plus"></i> New
+                Item</button>
             <div class="notes-list" id="notesList"></div>
 
             <div class="sidebar-footer">
-                <button id="themeToggleBtn" title="Toggle Theme"><i class="fa-solid fa-circle-half-stroke"></i> Switch Theme</button>
+                <button id="themeToggleBtn" title="Toggle Theme"><i class="fa-solid fa-circle-half-stroke"></i> Switch
+                    Theme</button>
+                <div class="sidebar-social-links">
+                    <a href="https://github.com/Yuvraj-Srivastava20" target="_blank" rel="noopener noreferrer"
+                        aria-label="GitHub">
+                        <i class="fa-brands fa-github"></i>
+                    </a>
+                    <a href="https://linkedin.com/in/yuvraj-srivastava" target="_blank" rel="noopener noreferrer"
+                        aria-label="LinkedIn">
+                        <i class="fa-brands fa-linkedin"></i>
+                    </a>
+                    <a href="mailto:srivastavayuvraj07@gmail.com" aria-label="Email">
+                        <i class="fa-solid fa-envelope"></i>
+                    </a>
+                </div>
             </div>
         </aside>
 
@@ -43,6 +65,10 @@
 
             <div class="workspace-active hidden fade-in" id="activeWorkspace">
                 <div class="workspace-header">
+                    <!-- Mobile Sidebar Toggle Button -->
+                    <button id="mobileMenuBtn" class="mobile-menu-btn" aria-label="Toggle Sidebar">
+                        <i class="fa-solid fa-bars"></i> Menu
+                    </button>
                     <h1 id="currentNoteTitle">Untitled</h1>
                     <span id="syncStatus" class="status-saved">Saved</span>
                 </div>
@@ -68,11 +94,14 @@
                     <label>Text Color:
                         <input type="color" id="textColorPicker" value="#cdd6f4">
                     </label>
-                    
+
                     <div class="panel-toggle-controls">
-                        <button id="toggleEditorPaneBtn" class="btn-panel-toggle" title="Toggle Editor"><i class="fa-solid fa-pen-to-square"></i> Editor</button>
-                        <button id="togglePreviewPaneBtn" class="btn-panel-toggle" title="Toggle Preview"><i class="fa-solid fa-eye"></i> Preview</button>
-                        <button id="toggleClipboardBtn" class="btn-panel-toggle" title="Toggle Side Clipboard"><i class="fa-solid fa-clipboard"></i> Clipboard (<span id="clipCount">0</span>)</button>
+                        <button id="toggleEditorPaneBtn" class="btn-panel-toggle" title="Toggle Editor"><i
+                                class="fa-solid fa-pen-to-square"></i> Editor</button>
+                        <button id="togglePreviewPaneBtn" class="btn-panel-toggle" title="Toggle Preview"><i
+                                class="fa-solid fa-eye"></i> Preview</button>
+                        <button id="toggleClipboardBtn" class="btn-panel-toggle" title="Toggle Side Clipboard"><i
+                                class="fa-solid fa-clipboard"></i> Clipboard (<span id="clipCount">0</span>)</button>
                     </div>
                 </div>
 
@@ -80,9 +109,11 @@
                     <div class="editor-container" id="editorContainer">
                         <div class="editor-wrapper" id="editorPane">
                             <div id="line-numbers" class="line-numbers">1</div>
-                            <textarea id="note-editor" spellcheck="true" autocomplete="on" autocorrect="on" capitalize="off" placeholder="Write plain text lines or standard Markdown here..."></textarea>
+                            <textarea id="note-editor" spellcheck="true" autocomplete="on" autocorrect="on"
+                                capitalize="off"
+                                placeholder="Write plain text lines or standard Markdown here..."></textarea>
                         </div>
-                        
+
                         <!-- Resizable Splitter Bar -->
                         <div class="resizer" id="dragResizer"></div>
 
@@ -104,14 +135,14 @@
 
     <!-- New Item Dialog -->
     <dialog id="newItemModal" class="pop-in">
-        <form id="newItemForm" method="dialog">
+        <form id="newItemForm">
             <h3>Create New Item</h3>
             <label for="itemType">Type:</label>
             <select id="itemType">
                 <option value="note">Note</option>
                 <option value="list">List</option>
             </select>
-            
+
             <label for="itemName">Name:</label>
             <input type="text" id="itemName" placeholder="Enter name of note or list" required>
 
@@ -122,9 +153,63 @@
         </form>
     </dialog>
 
+    <!-- Change/Switch Room Dialog -->
+    <dialog id="changeRoomModal" class="pop-in">
+        <div class="modal-card">
+            <!-- Tab Controls -->
+            <div class="modal-tabs">
+                <button type="button" id="tabJoinBtn" class="tab-btn active">Join Room</button>
+                <button type="button" id="tabRenameBtn" class="tab-btn">Rename Room</button>
+            </div>
+
+            <!-- Option 1: Join Existing Room -->
+            <div id="joinRoomSection" class="tab-content">
+                <form id="changeRoomForm">
+                    <h3>Join Existing Room Workspace</h3>
+                    <label for="switchRoomNameInput">Room Code / Name:</label>
+                    <input type="text" id="switchRoomNameInput" placeholder="e.g. my-private-notes" required>
+
+                    <label for="switchRoomPinInput">Room PIN:</label>
+                    <input type="password" id="switchRoomPinInput" maxlength="4" minlength="4" pattern="\d{4}"
+                        inputmode="numeric" placeholder="e.g. 1234" required>
+
+                    <div class="dialog-actions">
+                        <button type="button" id="cancelChangeRoomBtn" class="btn-cancel">Cancel</button>
+                        <button type="submit" class="btn-primary">Join Room</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Option 2: Rename Current Room -->
+            <div id="renameRoomSection" class="tab-content hidden">
+                <form id="renameRoomForm">
+                    <h3>Rename Current Room</h3>
+                    <div class="input-group">
+                        <label for="newRoomNameInput">New Display Name:</label>
+                        <input type="text" id="newRoomNameInput" placeholder="e.g. My Workspace" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="newRoomPinInput">New Room PIN (Optional):</label>
+                        <input type="password" id="newRoomPinInput" maxlength="4" minlength="4" pattern="\d{4}"
+                            inputmode="numeric" placeholder="Leave blank to keep same">
+                    </div>
+
+                    <div class="dialog-actions">
+                        <button type="button" id="cancelRenameRoomBtn" class="btn-cancel">Cancel</button>
+                        <button type="submit" class="btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Mobile Drawer Background Overlay -->
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="app.js"></script>
 </body>
+
 </html>

@@ -82,11 +82,20 @@ button {
     border: none;
 }
 
+/* Disabled state styling for the primary button */
+.btn-primary:disabled {
+    background-color: #45475a;
+    color: #7f849c;
+    cursor: not-allowed;
+    transform: none !important;
+    opacity: 0.6;
+}
+
 .btn-secondary {
     background-color: var(--panel-bg);
 }
 
-button:hover {
+button:hover:not(:disabled) {
     transform: translateY(-2px);
 }
 
@@ -207,4 +216,37 @@ dialog input {
 @keyframes popIn {
     from { transform: scale(0.9); opacity: 0; }
     to { transform: scale(1); opacity: 1; }
+}
+
+.main-footer {
+    background-color: var(--bg-secondary, #252538);
+    border-top: 1px solid var(--border, #45475a);
+    padding: 20px 0;
+    margin-top: auto;
+    text-align: center;
+}
+
+.footer-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-secondary, #a6adc8);
+    font-size: 0.9rem;
+}
+
+.footer-social-links {
+    display: flex;
+    gap: 18px;
+}
+
+.footer-social-links a {
+    color: var(--text-secondary, #a6adc8);
+    font-size: 1.3rem;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.footer-social-links a:hover {
+    color: var(--accent, #89b4fa);
+    transform: translateY(-2px);
 }
