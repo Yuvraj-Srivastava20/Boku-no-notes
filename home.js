@@ -13,22 +13,92 @@ if (!firebase.apps.length) {
 }
 const db = firebase.firestore();
 
+const DEFAULT_README_VERSION = 2;
+
 const defaultReadmeContent = `# Welcome to Boku No Notes!
 
-Here is how to get started with your workspace:
+Welcome to your workspace! Boku No Notes lets you create, organize, and edit notes and checklists in real time.
 
-1. **Creating Items**: Click '+ New Item' in the sidebar to add Notes or Checklist Lists.
-2. **Auto Lists**: Lines in list files auto-format. Check the box to strike out completed items.
-3. **Resizing Workspace**: Click and drag the thin bar between the text area and preview to adjust widths.
-4. **Visibility Controls**: Use the header buttons (Editor, Preview, Clipboard) to toggle views.
-5. **Clipboard Drawer**: Copy text anywhere on the page to store clips in your side panel for 1-click insertion.
-`;
+## Getting Started
+
+1. **Create an Item:** Click **+ New Item** in the sidebar to create a Note or Checklist.
+2. **Edit Your Note:** Select an item from the sidebar and start typing in the editor.
+3. **Checklist:** Create a Checklist and add one task per line. Use the checkboxes in the preview to mark tasks as completed.
+4. **Live Preview:** Your Markdown content is displayed automatically in the preview panel.
+5. **Resize the Workspace:** Drag the divider between the editor and preview to adjust their widths.
+6. **Toggle Panels:** Use the **Editor**, **Preview**, and **Clipboard** buttons to show or hide panels.
+7. **Clipboard:** Copy text anywhere on the page to save it in the Clipboard panel. Use **Insert** to quickly add a saved clip to your note.
+
+---
+
+## Markdown Formatting Guide
+
+Boku No Notes supports standard Markdown formatting.
+
+- **Bold:** \`**bold text**\`
+- *Italic:* \`*italic text*\`
+- ~~Strikethrough:~~ \`~~strikethrough text~~\`
+- \`Inline Code:\` \`\\\`code\\\`\`
+- **Heading 1:** \`# Heading\`
+- **Heading 2:** \`## Heading\`
+- **Heading 3:** \`### Heading\`
+- **Blockquote:** \`> Quoted text\`
+- **Bullet List:** \`- Item\` or \`* Item\`
+- **Numbered List:** \`1. Item\`
+
+---
+
+## Tips
+
+- Changes are saved automatically.
+- Your room is shared with other people using the same room code.
+- Keep your room PIN private.
+- Use the search box in the sidebar to quickly find a note.
+
+**Enjoy using Boku No Notes!**`;
 
 document.addEventListener("DOMContentLoaded", () => {
+    const themeToggleBtn = document.getElementById("themeToggleBtn");
+    const themeIcon = document.getElementById("themeIcon");
+
+    // Helper function to update sun/moon icon
+    function updateThemeIcon(theme) {
+        if (!themeIcon) return;
+        if (theme === "light") {
+            themeIcon.className = "fa-solid fa-sun";
+        } else {
+            themeIcon.className = "fa-solid fa-moon";
+        }
+    }
+
+    // 1. Initialize Saved Theme Preference on Load
+    const savedTheme = localStorage.getItem("boku_theme");
+    if (savedTheme === "light") {
+        document.body.setAttribute("data-theme", "light");
+        updateThemeIcon("light");
+    } else {
+        updateThemeIcon("dark");
+    }
+
+    // 2. Add Event Listener for Theme Toggle Button
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener("click", () => {
+            const currentTheme = document.body.getAttribute("data-theme");
+            if (currentTheme === "light") {
+                document.body.removeAttribute("data-theme");
+                localStorage.setItem("boku_theme", "dark");
+                updateThemeIcon("dark");
+            } else {
+                document.body.setAttribute("data-theme", "light");
+                localStorage.setItem("boku_theme", "light");
+                updateThemeIcon("light");
+            }
+        });
+    }
     const brandTitleLink = document.getElementById("brandTitleLink");
     const openCreateModalBtn = document.getElementById("openCreateModalBtn");
     const openJoinModalBtn = document.getElementById("openJoinModalBtn");
-    
+
     const createRoomModal = document.getElementById("createRoomModal");
     const createRoomForm = document.getElementById("createRoomForm");
     const btnTypeRandom = document.getElementById("btnTypeRandom");
@@ -45,6 +115,28 @@ document.addEventListener("DOMContentLoaded", () => {
     const joinPinInput = document.getElementById("joinPinInput");
     const cancelJoinBtn = document.getElementById("cancelJoinBtn");
 
+    function setJoinButtonLoading(isLoading) {
+        const submitButton = joinRoomForm
+            ? joinRoomForm.querySelector('button[type="submit"]')
+            : null;
+
+        if (!submitButton) return;
+
+        if (isLoading) {
+            submitButton.disabled = true;
+            submitButton.textContent = "Opening Room...";
+        } else {
+            submitButton.disabled = false;
+            submitButton.textContent = "Join Room";
+        }
+    }
+
+    // Reset Join Room button when returning to the home page
+    window.addEventListener("pageshow", () => {
+        setJoinButtonLoading(false);
+        resetCreateModal();
+    });
+
     if (brandTitleLink) {
         brandTitleLink.addEventListener("click", () => {
             window.location.href = "index.html";
@@ -52,7 +144,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function generate16CharRoomCode() {
-        const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         let code = "";
         for (let i = 0; i < 16; i++) {
             code += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -62,21 +154,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Reset Modal to initial neutral state
     function resetCreateModal() {
-        if (btnTypeRandom) btnTypeRandom.classList.remove("active");
-        if (btnTypeCustom) btnTypeCustom.classList.remove("active");
+        if (btnTypeRandom) {
+            btnTypeRandom.disabled = false;
+            btnTypeRandom.textContent = "Random Room";
+            btnTypeRandom.classList.remove("active");
+        }
+
+        if (btnTypeCustom) {
+            btnTypeCustom.disabled = false;
+            btnTypeCustom.textContent = "Custom Room";
+            btnTypeCustom.classList.remove("active");
+        }
+
+        if (cancelCreateBtn) {
+            cancelCreateBtn.disabled = false;
+        }
+
         if (customNameContainer) customNameContainer.classList.add("hidden");
         if (customRoomInput) customRoomInput.value = "";
         if (roomPinInput) roomPinInput.value = "";
-        if (submitCreateBtn) submitCreateBtn.disabled = true;
+
+        if (submitCreateBtn) {
+            submitCreateBtn.disabled = true;
+            submitCreateBtn.textContent = "Create & Open";
+        }
     }
 
     // Validate if custom room input fields are filled
     function validateCustomInputs() {
         const nameVal = customRoomInput ? customRoomInput.value.trim() : "";
         const pinVal = roomPinInput ? roomPinInput.value.trim() : "";
-        
+
         if (submitCreateBtn) {
-            submitCreateBtn.disabled = !(nameVal && pinVal);
+            submitCreateBtn.disabled = !(nameVal && /^\d{4}$/.test(pinVal));
         }
     }
 
@@ -97,7 +207,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (openJoinModalBtn) {
         openJoinModalBtn.addEventListener("click", () => joinRoomModal.showModal());
     }
-    
+
     if (cancelJoinBtn) {
         cancelJoinBtn.addEventListener("click", () => joinRoomModal.close());
     }
@@ -107,7 +217,13 @@ document.addEventListener("DOMContentLoaded", () => {
         btnTypeRandom.addEventListener("click", async () => {
             const randomCode = generate16CharRoomCode();
             const randomPin = Math.floor(1000 + Math.random() * 9000).toString(); // 4-digit PIN
-            
+
+            btnTypeRandom.disabled = true;
+            btnTypeRandom.textContent = "Creating Room...";
+
+            if (btnTypeCustom) btnTypeCustom.disabled = true;
+            if (cancelCreateBtn) cancelCreateBtn.disabled = true;
+
             try {
                 let user = firebase.auth().currentUser;
                 if (!user) {
@@ -123,16 +239,26 @@ document.addEventListener("DOMContentLoaded", () => {
                         "readme_note": {
                             title: "README - Instructions",
                             type: "note",
-                            content: defaultReadmeContent
+                            content: defaultReadmeContent,
+                            isDefault: true,
+                            version: DEFAULT_README_VERSION
                         }
                     },
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
-                window.location.href = `app.html?room=${encodeURIComponent(randomCode)}&pin=${encodeURIComponent(randomPin)}`;
+                sessionStorage.setItem("boku_room_pin", randomPin);
+
+                window.location.href = `app.html?room=${encodeURIComponent(randomCode)}`;
             } catch (err) {
                 console.error("Creation Error:", err);
                 alert("Failed to create random room: " + err.message);
+
+                btnTypeRandom.disabled = false;
+                btnTypeRandom.textContent = "Random Room";
+
+                if (btnTypeCustom) btnTypeCustom.disabled = false;
+                if (cancelCreateBtn) cancelCreateBtn.disabled = false;
             }
         });
     }
@@ -157,13 +283,34 @@ document.addEventListener("DOMContentLoaded", () => {
         createRoomForm.addEventListener("submit", async (e) => {
             e.preventDefault();
 
-            const nameVal = customRoomInput.value.trim().toLowerCase().replace(/\s+/g, '-');
+            const rawInput = customRoomInput.value.trim();
             const pinVal = roomPinInput ? roomPinInput.value.trim() : "";
-            
-            if (!nameVal || !pinVal) return;
 
-            const roomCode = nameVal.startsWith("ROOM-") ? nameVal : `ROOM-${nameVal}`;
+            if (!rawInput) {
+                alert("Please enter a room name.");
+                return;
+            }
 
+            if (!/^\d{4}$/.test(pinVal)) {
+                alert("PIN must be exactly 4 digits.");
+                return;
+            }
+
+            submitCreateBtn.disabled = true;
+            submitCreateBtn.textContent = "Creating Room...";
+
+            if (btnTypeRandom) btnTypeRandom.disabled = true;
+            if (btnTypeCustom) btnTypeCustom.disabled = true;
+            if (cancelCreateBtn) cancelCreateBtn.disabled = true;
+
+
+            // Clean any leading 'room-' or 'ROOM-' prefixes completely
+            const cleanName = rawInput
+                .replace(/^(ROOM-|room-)+/i, '')
+                .toUpperCase()
+                .replace(/\s+/g, '-');
+
+            const roomCode = `ROOM-${cleanName}`;
             try {
                 let user = firebase.auth().currentUser;
                 if (!user) {
@@ -172,31 +319,55 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 const roomRef = db.collection("bokuNoNotesRooms").doc(roomCode);
-                const roomDoc = await roomRef.get();
 
-                if (roomDoc.exists) {
-                    alert(`The room "${nameVal}" already exists! Please choose another name or join the existing room.`);
-                    return;
+                try {
+                    await db.runTransaction(async (transaction) => {
+                        const roomDoc = await transaction.get(roomRef);
+
+                        if (roomDoc.exists) {
+                            throw new Error("ROOM_ALREADY_EXISTS");
+                        }
+
+                        transaction.set(roomRef, {
+                            ownerId: user.uid,
+                            pin: pinVal,
+                            notes: {
+                                "readme_note": {
+                                    title: "README - Instructions",
+                                    type: "note",
+                                    content: defaultReadmeContent,
+                                    isDefault: true,
+                                    version: DEFAULT_README_VERSION
+                                }
+                            },
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    });
+                } catch (err) {
+                    if (err.message === "ROOM_ALREADY_EXISTS") {
+                        alert(`The room "${cleanName}" already exists! Please choose another name or join the existing room.`);
+                        resetCreateModal();
+                        return;
+                    }
+
+                    throw err;
                 }
 
-                // Pre-create custom room document
-                await roomRef.set({
-                    ownerId: user.uid,
-                    pin: pinVal,
-                    notes: {
-                        "readme_note": {
-                            title: "README - Instructions",
-                            type: "note",
-                            content: defaultReadmeContent
-                        }
-                    },
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                sessionStorage.setItem("boku_room_pin", pinVal);
 
-                window.location.href = `app.html?room=${encodeURIComponent(roomCode)}&pin=${encodeURIComponent(pinVal)}`;
+                window.location.href = `app.html?room=${encodeURIComponent(roomCode)}`;
             } catch (err) {
                 console.error("Error creating room:", err);
                 alert("Room creation error: " + err.message);
+
+                submitCreateBtn.disabled = false;
+                submitCreateBtn.textContent = "Create & Open";
+
+                if (btnTypeRandom) btnTypeRandom.disabled = false;
+                if (btnTypeCustom) btnTypeCustom.disabled = false;
+                if (cancelCreateBtn) cancelCreateBtn.disabled = false;
+
+                validateCustomInputs();
             }
         });
     }
@@ -205,15 +376,18 @@ document.addEventListener("DOMContentLoaded", () => {
     if (joinRoomForm) {
         joinRoomForm.addEventListener("submit", async (e) => {
             e.preventDefault();
-            const rawName = joinRoomInput.value.trim().toLowerCase().replace(/\s+/g, '-');
+            setJoinButtonLoading(true);
+            const rawInput = joinRoomInput.value.trim();
             const pin = joinPinInput ? joinPinInput.value.trim() : "";
 
-            if (!rawName || !pin) {
+            if (!rawInput || !pin) {
                 alert("Please enter both the room name and the PIN.");
+                setJoinButtonLoading(false);
                 return;
             }
 
-            const roomCode = rawName.startsWith("ROOM-") ? rawName : `ROOM-${rawName}`;
+            const cleanName = rawInput.replace(/^(ROOM-|room-)+/i, '').toUpperCase().replace(/\s+/g, '-');
+            const roomCode = `ROOM-${cleanName}`;
 
             try {
                 let user = firebase.auth().currentUser;
@@ -222,24 +396,32 @@ document.addEventListener("DOMContentLoaded", () => {
                     user = authRes.user;
                 }
 
-                // Verify room exists and PIN matches BEFORE redirecting
                 const roomDoc = await db.collection("bokuNoNotesRooms").doc(roomCode).get();
 
                 if (!roomDoc.exists) {
-                    alert(`Error: The room "${rawName}" does not exist. Please check the room name or create a new room.`);
+                    alert(`Error: The room "${cleanName}" does not exist. Please check the room name or create a new room.`);
+                    setJoinButtonLoading(false);
                     return;
                 }
 
                 const roomData = roomDoc.data();
-                if (roomData.pin && roomData.pin !== pin && roomData.ownerId !== user.uid) {
+                if (
+                    roomData.pin &&
+                    String(roomData.pin) !== String(pin) &&
+                    roomData.ownerId !== user.uid
+                ) {
                     alert("Error: Incorrect PIN for this room.");
+                    setJoinButtonLoading(false);
                     return;
                 }
 
-                window.location.href = `app.html?room=${encodeURIComponent(roomCode)}&pin=${encodeURIComponent(pin)}`;
+                sessionStorage.setItem("boku_room_pin", pin);
+
+                window.location.href = `app.html?room=${encodeURIComponent(roomCode)}`;
             } catch (err) {
                 console.error("Error checking room existence:", err);
                 alert("Error connecting to server. Please try again.");
+                setJoinButtonLoading(false);
             }
         });
     }

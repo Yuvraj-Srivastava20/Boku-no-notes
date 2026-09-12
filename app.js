@@ -52,35 +52,60 @@ const clipboardPanel = document.getElementById("clipboardPanel");
 const clipboardItems = document.getElementById("clipboardItems");
 const clipCount = document.getElementById("clipCount");
 
+const DEFAULT_README_VERSION = 2;
+
 const defaultReadmeContent = `# Welcome to Boku No Notes!
 
-Here is how to get started with your workspace:
+Welcome to your workspace! Boku No Notes lets you create, organize, and edit notes and checklists in real time.
 
-1. **Creating Items**: Click '+ New Item' in the sidebar to add Notes or Checklist Lists.
-2. **Auto Lists**: Lines in list files auto-format. Check the box to strike out completed items.
-3. **Resizing Workspace**: Click and drag the thin bar between the text area and preview to adjust widths.
-4. **Visibility Controls**: Use the header buttons (Editor, Preview, Clipboard) to toggle views.
-5. **Clipboard Drawer**: Copy text anywhere on the page to store clips in your side panel for 1-click insertion.
+## Getting Started
+
+1. **Create an Item:** Click **+ New Item** in the sidebar to create a Note or Checklist.
+2. **Edit Your Note:** Select an item from the sidebar and start typing in the editor.
+3. **Checklist:** Create a Checklist and add one task per line. Use the checkboxes in the preview to mark tasks as completed.
+4. **Live Preview:** Your Markdown content is displayed automatically in the preview panel.
+5. **Resize the Workspace:** Drag the divider between the editor and preview to adjust their widths.
+6. **Toggle Panels:** Use the **Editor**, **Preview**, and **Clipboard** buttons to show or hide panels.
+7. **Clipboard:** Copy text anywhere on the page to save it in the Clipboard panel. Use **Insert** to quickly add a saved clip to your note.
 
 ---
 
-### Text Formatting Guide
+## Markdown Formatting Guide
 
-You can format your notes using standard **Markdown syntax**:
+Boku No Notes supports standard Markdown formatting.
 
-* **Bold**: Wrap text in double asterisks like \`**bold text**\`
-* *Italics*: Wrap text in single asterisks like \`*italic text*\`
-* ~~Strikethrough~~: Wrap text in double tildes like \`~~strikethrough~~\`
-* \`Inline Code\`: Wrap text in single backticks like \`code\`
-* **Headers**: Start a line with \`#\` for Heading 1, \`##\` for Heading 2, or \`###\` for Heading 3.
-* **Blockquotes**: Start a line with \`>\` to create a quoted block.
-* **Bullet Lists**: Start lines with \`*\` or \`-\` followed by a space.
-* **Numbered Lists**: Start lines with numbers like \`1.\`, \`2.\`, etc.`;
+- **Bold:** \`**bold text**\`
+- *Italic:* \`*italic text*\`
+- ~~Strikethrough:~~ \`~~strikethrough text~~\`
+- \`Inline Code:\` \`\\\`code\\\`\`
+- **Heading 1:** \`# Heading\`
+- **Heading 2:** \`## Heading\`
+- **Heading 3:** \`### Heading\`
+- **Blockquote:** \`> Quoted text\`
+- **Bullet List:** \`- Item\` or \`* Item\`
+- **Numbered List:** \`1. Item\`
+
+---
+
+## Tips
+
+- Changes are saved automatically.
+- Your room is shared with other people using the same room code.
+- Keep your room PIN private.
+- Use the search box in the sidebar to quickly find a note.
+
+**Enjoy using Boku No Notes!**`;
 
 // Global State
 const urlParams = new URLSearchParams(window.location.search);
 const rawRoomParam = urlParams.get("room");
-const isCreateMode = urlParams.get("create") === "true";
+
+// Redirect to home page when clicking the brand title
+if (brandTitle) {
+    brandTitle.addEventListener("click", () => {
+        window.location.href = "index.html";
+    });
+}
 
 // Fallback if room param is missing completely
 if (!rawRoomParam) {
@@ -89,8 +114,7 @@ if (!rawRoomParam) {
 
 // Sanitize room string
 let currentRoom = rawRoomParam || "";
-let currentPin = urlParams.get("pin") || "";
-
+let currentPin = urlParams.get("pin") || sessionStorage.getItem("boku_room_pin") || "";
 if (rawRoomParam && rawRoomParam.includes("-PIN-")) {
     const parts = rawRoomParam.split("-PIN-");
     currentRoom = parts[0];
@@ -107,44 +131,116 @@ let saveTimeout = null;
 let roomUnsubscribe = null;
 let copiedClips = [];
 
-// Theme Switcher
-const savedTheme = localStorage.getItem('preferred-theme') || 'dark';
-document.body.setAttribute('data-theme', savedTheme);
-
-if (themeToggleBtn) {
-    themeToggleBtn.addEventListener('click', () => {
-        const currentTheme = document.body.getAttribute('data-theme');
-        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        document.body.setAttribute('data-theme', newTheme);
-        localStorage.setItem('preferred-theme', newTheme);
-    });
+let noteBaseContent = "";
+// Remember the last opened note for each room.
+function getActiveNoteStorageKey() {
+    return `boku_active_note_${getRoomId()}`;
 }
 
-if (brandTitle) {
-    brandTitle.addEventListener("click", () => {
-        window.location.href = "index.html";
-    });
+function saveActiveNoteId(noteId) {
+    try {
+        localStorage.setItem(getActiveNoteStorageKey(), noteId);
+    } catch (error) {
+        console.error("Could not save active note:", error);
+    }
 }
 
-// Visual Line Numbers Generator
-function updateLineNumbers() {
-    if (!editor || !lineNumbers) return;
+function loadActiveNoteId() {
+    try {
+        return localStorage.getItem(getActiveNoteStorageKey());
+    } catch (error) {
+        console.error("Could not load active note:", error);
+        return null;
+    }
+}
+// Get a unique storage key for the current room
+function getClipboardStorageKey() {
+    return `boku_clipboard_${getRoomId()}`;
+}
 
-    const lines = editor.value.split('\n');
-    let numberHtml = '';
-    for (let i = 0; i < lines.length; i++) {
-        numberHtml += `<div>${i + 1}</div>`;
+// Load clipboard history from localStorage
+function loadClipboardHistory() {
+    try {
+        const saved = localStorage.getItem(getClipboardStorageKey());
+
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            copiedClips = Array.isArray(parsed) ? parsed : [];
+        } else {
+            copiedClips = [];
+        }
+    } catch (error) {
+        console.error("Could not load clipboard history:", error);
+        copiedClips = [];
     }
 
-    lineNumbers.innerHTML = numberHtml;
+    updateClipboardUI();
 }
 
-// Styling Controls
-function applyEditorStyles() {
+// Save clipboard history to localStorage
+function saveClipboardHistory() {
+    try {
+        localStorage.setItem(
+            getClipboardStorageKey(),
+            JSON.stringify(copiedClips)
+        );
+    } catch (error) {
+        console.error("Could not save clipboard history:", error);
+    }
+}
+// Helper function to safely get the active room ID
+function getRoomId() {
+    if (typeof currentRoom !== "undefined" && currentRoom) return currentRoom;
+    const params = new URLSearchParams(window.location.search);
+    return params.get("room") || "default";
+}
+// Helper function to calculate and update line numbers in the editor
+function updateLineNumbers() {
+    if (!editor || !lineNumbers) return;
+    const lineCount = editor.value ? editor.value.split('\n').length : 1;
+    let numbersHtml = '';
+    for (let i = 1; i <= lineCount; i++) {
+        numbersHtml += i + '<br>';
+    }
+    lineNumbers.innerHTML = numbersHtml;
+}
+
+// Apply saved theme preference on page load
+const savedTheme = localStorage.getItem("boku_theme");
+if (savedTheme === "light") {
+    document.body.setAttribute("data-theme", "light");
+}
+
+// Load saved font preferences for the active room
+function loadSavedFontPreferences() {
+    const roomId = getRoomId();
+    const isLight = document.body.getAttribute("data-theme") === "light";
+    const defaultColor = isLight ? "#1e1e2e" : "#cdd6f4";
+
+    const savedSize = localStorage.getItem(`boku_font_size_${roomId}`) || "16px";
+    const savedStyle = localStorage.getItem(`boku_font_style_${roomId}`) || "sans-serif";
+    const savedColor = localStorage.getItem(`boku_text_color_${roomId}`) || defaultColor;
+
+    if (fontSizeSelect) fontSizeSelect.value = savedSize;
+    if (fontStyleSelect) fontStyleSelect.value = savedStyle;
+    if (textColorPicker) textColorPicker.value = savedColor;
+
+    applyEditorStyles(false);
+}
+
+// Apply styling controls using room-specific LocalStorage keys
+function applyEditorStyles(shouldSave = true) {
     if (!editor || !lineNumbers || !output) return;
     const selectedSize = fontSizeSelect.value;
     const selectedFamily = fontStyleSelect.value;
     const selectedColor = textColorPicker.value;
+
+    if (shouldSave) {
+        const roomId = getRoomId();
+        localStorage.setItem(`boku_font_size_${roomId}`, selectedSize);
+        localStorage.setItem(`boku_font_style_${roomId}`, selectedFamily);
+        localStorage.setItem(`boku_text_color_${roomId}`, selectedColor);
+    }
 
     editor.style.fontSize = selectedSize;
     editor.style.fontFamily = selectedFamily;
@@ -159,6 +255,14 @@ function applyEditorStyles() {
 
     updateLineNumbers();
 }
+
+
+// Call loadSavedFontPreferences() inside your DOMContentLoaded or initial setup block in app.js
+document.addEventListener("DOMContentLoaded", () => {
+    loadSavedFontPreferences();
+    loadClipboardHistory();
+
+});
 
 if (fontSizeSelect) fontSizeSelect.addEventListener("change", applyEditorStyles);
 if (fontStyleSelect) fontStyleSelect.addEventListener("change", applyEditorStyles);
@@ -179,10 +283,14 @@ if (editor) {
         renderContent();
 
         clearTimeout(saveTimeout);
+
+        const noteIdBeingEdited = activeNoteId;
+        const contentBeingEdited = editor.value;
+
         saveTimeout = setTimeout(() => {
-            if (notesData[activeNoteId]) {
-                notesData[activeNoteId].content = editor.value;
-                saveRoomData();
+            if (notesData[noteIdBeingEdited]) {
+                notesData[noteIdBeingEdited].content = contentBeingEdited;
+                saveRoomData(noteIdBeingEdited);
             }
         }, 1000);
     });
@@ -209,87 +317,79 @@ auth.signInAnonymously()
                     const data = doc.data();
 
                     // Verify ownership / PIN credentials
-                    // Strict PIN verification for all visitors (including the owner)
-                    if (data.pin && String(data.pin) !== String(currentPin)) {
+                    const isOwner = data.ownerId === user.uid;
+
+                    // Allow room owners to enter without PIN params while enforcing PIN checks for visitors
+                    if (!isOwner && data.pin && String(data.pin) !== String(currentPin)) {
                         alert("Access Denied: Invalid PIN for this room.");
                         window.location.href = "index.html";
                         return;
+                    }
+
+                    // Strip PIN parameter from the browser history and address bar after validation
+                    if (urlParams.has("pin")) {
+                        const cleanUrl = `${window.location.origin}${window.location.pathname}?room=${currentRoom}`;
+                        window.history.replaceState({}, document.title, cleanUrl);
                     }
 
                     notesData = data.notes || {};
 
                     // If the room has no notes, create the complete README
                     if (Object.keys(notesData).length === 0) {
-
                         notesData = {
                             "readme_note": {
                                 title: "README - Instructions",
                                 type: "note",
-                                content: defaultReadmeContent
+                                content: defaultReadmeContent,
+                                isDefault: true,
+                                version: DEFAULT_README_VERSION
                             }
                         };
 
                         await roomRef.update({
                             notes: notesData
                         });
-
-                    } else if (notesData["readme_note"]) {
-
-                        const storedReadme = notesData["readme_note"].content || "";
-
-                        /*
-                         * Detect the old built-in README.
-                         * We only upgrade it if the Text Formatting Guide
-                         * is missing.
-                         */
-                        const isOldDefaultReadme =
-                            storedReadme.includes("# Welcome to Boku No Notes!") &&
-                            storedReadme.includes("Here is how to get started with your workspace:") &&
-                            storedReadme.includes("1. **Creating Items**") &&
-                            storedReadme.includes("5. **Clipboard Drawer**") &&
-                            !storedReadme.includes("Text Formatting Guide");
-
-                        if (isOldDefaultReadme) {
-
-                            notesData["readme_note"].content = defaultReadmeContent;
-
-                            await roomRef.update({
-                                notes: notesData
-                            });
-
-                            console.log("README upgraded to complete version.");
-                        }
                     }
+
                 } else {
-                    // Check if request is creating a new room
-                    if (isCreateMode) {
-                        notesData = {
-                            "readme_note": {
-                                title: "README - Instructions",
-                                type: "note",
-                                content: defaultReadmeContent
-                            }
-                        };
-                        await roomRef.set({
-                            ownerId: user.uid,
-                            pin: currentPin,
-                            notes: notesData,
-                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                    } else {
-                        // Throw error when attempting to join non-existent room
-                        alert(`Error: The room "${currentRoom.replace(/^ROOM-/, '')}" does not exist.`);
-                        window.location.href = "index.html";
-                        return;
-                    }
+                    // Room does not exist
+                    alert(`Error: The room "${currentRoom.replace(/^ROOM-/, '')
+                        }" does not exist.`);
+                    window.location.href = "index.html";
+                    return;
                 }
 
                 renderNotesList();
 
                 const noteKeys = Object.keys(notesData);
+
                 if (noteKeys.length > 0) {
-                    const targetId = (activeNoteId && notesData[activeNoteId]) ? activeNoteId : noteKeys[0];
-                    openNote(targetId);
+
+                    // If the currently active note still exists,
+                    // keep it open.
+                    if (activeNoteId && notesData[activeNoteId]) {
+                        return;
+                    }
+
+                    // Try to restore the last note opened in this room.
+                    const savedActiveNoteId = loadActiveNoteId();
+
+                    if (savedActiveNoteId && notesData[savedActiveNoteId]) {
+                        openNote(savedActiveNoteId);
+                        return;
+                    }
+
+                    // If there is no saved note, open the most recently
+                    // saved note instead of automatically opening README.
+                    const sortedNoteKeys = [...noteKeys].sort((a, b) => {
+                        const timeA = notesData[a].updatedAt || 0;
+                        const timeB = notesData[b].updatedAt || 0;
+
+                        return timeB - timeA;
+                    });
+
+                    openNote(sortedNoteKeys[0]);
+
                 } else {
                     closeWorkspace();
                 }
@@ -329,10 +429,23 @@ if (newItemForm) {
             ? "Task Item 1\nTask Item 2\nTask Item 3"
             : "";
 
-        notesData[noteId] = { title, type, content: defaultContent };
-        saveRoomData();
-        newItemModal.close();
+        const now = Date.now();
+
+        notesData[noteId] = {
+            title,
+            type,
+            content: defaultContent,
+            createdAt: now,
+            updatedAt: now
+        };
+        db.collection("bokuNoNotesRooms")
+            .doc(currentRoom)
+            .update({
+                [`notes.${noteId}`]: notesData[noteId]
+            });
+
         openNote(noteId);
+        newItemModal.close();
     });
 }
 
@@ -354,70 +467,130 @@ if (cancelChangeRoomBtn) {
 if (changeRoomForm) {
     changeRoomForm.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const newRoomName = switchRoomNameInput.value.trim().toLowerCase().replace(/\s+/g, '-');
+        const rawInput = switchRoomNameInput.value.trim();
         const newPin = switchRoomPinInput.value.trim();
 
-        if (!newRoomName || !newPin) return;
+        if (!rawInput || !newPin) {
+            alert("Please enter both the room code and 4-digit PIN.");
+            return;
+        }
 
-        const targetRoomCode = newRoomName.startsWith("ROOM-") ? newRoomName : `ROOM-${newRoomName}`;
+        if (!/^\d{4}$/.test(newPin)) {
+            alert("PIN must be exactly 4 digits.");
+            return;
+        }
+
+        // Clean any existing 'room-' prefix regardless of case
+        const cleanName = rawInput.replace(/^ROOM-/i, '').toUpperCase().replace(/\s+/g, '-');
+        const targetRoomCode = `ROOM-${cleanName}`;
 
         try {
             const docSnap = await db.collection("bokuNoNotesRooms").doc(targetRoomCode).get();
+
             if (!docSnap.exists) {
-                alert(`Error: The room "${newRoomName}" does not exist. Check the room code or create a new room from the home page.`);
+                alert(`Error: The room "${cleanName}" does not exist. Check the room code or create a new room from the home page.`);
+                return;
+            }
+
+            // Check the PIN before leaving the current room
+            const targetRoomData = docSnap.data();
+
+            if (
+                targetRoomData.pin &&
+                String(targetRoomData.pin) !== String(newPin)
+            ) {
+                alert("Access Denied: Incorrect PIN for this room.");
                 return;
             }
 
             if (saveTimeout) clearTimeout(saveTimeout);
+
             if (typeof roomUnsubscribe === 'function') {
                 roomUnsubscribe();
                 roomUnsubscribe = null;
             }
 
-            window.location.assign(`app.html?room=${targetRoomCode}&pin=${newPin}`);
+            sessionStorage.setItem("boku_room_pin", newPin);
+
+            window.location.assign(
+                `app.html?room=${encodeURIComponent(targetRoomCode)}`
+            );
         } catch (err) {
             alert("Error validating room details: " + err.message);
         }
     });
 }
 
+// Theme Toggle & Persistence Control
+if (themeToggleBtn) {
+    themeToggleBtn.addEventListener("click", () => {
+        const currentTheme = document.body.getAttribute("data-theme");
+        if (currentTheme === "light") {
+            document.body.removeAttribute("data-theme");
+            localStorage.setItem("boku_theme", "dark");
+        } else {
+            document.body.setAttribute("data-theme", "light");
+            localStorage.setItem("boku_theme", "light");
+        }
+    });
+}
 function renderNotesList() {
     if (!notesList) return;
     notesList.innerHTML = "";
-    Object.keys(notesData).forEach((id) => {
-        const item = notesData[id];
-        const div = document.createElement("div");
-        div.className = `note-item ${id === activeNoteId ? "active" : ""}`;
+    Object.keys(notesData)
+        .sort((a, b) => {
+            const timeA = notesData[a].updatedAt || 0;
+            const timeB = notesData[b].updatedAt || 0;
 
-        const titleSpan = document.createElement("span");
-        const iconClass = item.type === "list" ? "fa-list-check" : "fa-file-lines";
+            return timeB - timeA;
+        })
+        .forEach((id) => {
+            const item = notesData[id];
+            const div = document.createElement("div");
+            div.className = `note-item ${id === activeNoteId ? "active" : ""}`;
 
-        // Secure text insertion to prevent XSS
-        const icon = document.createElement("i");
-        icon.className = `fa-solid ${iconClass}`;
-        titleSpan.appendChild(icon);
-        titleSpan.appendChild(document.createTextNode(` ${item.title}`));
+            const titleSpan = document.createElement("span");
+            const iconClass = item.type === "list" ? "fa-list-check" : "fa-file-lines";
 
-        titleSpan.addEventListener("click", () => openNote(id));
+            // Secure text insertion to prevent XSS
+            const icon = document.createElement("i");
+            icon.className = `fa-solid ${iconClass}`;
+            titleSpan.appendChild(icon);
+            titleSpan.appendChild(document.createTextNode(` ${item.title}`));
 
-        const delBtn = document.createElement("button");
-        delBtn.className = "delete-btn";
-        delBtn.innerHTML = "&times;";
-        delBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            deleteNote(id);
+            titleSpan.addEventListener("click", () => openNote(id));
+
+            const delBtn = document.createElement("button");
+            delBtn.className = "delete-btn";
+            delBtn.innerHTML = "&times;";
+            delBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                deleteNote(id);
+            });
+
+            div.appendChild(titleSpan);
+            div.appendChild(delBtn);
+            notesList.appendChild(div);
         });
-
-        div.appendChild(titleSpan);
-        div.appendChild(delBtn);
-        notesList.appendChild(div);
-    });
 }
 
 function openNote(id) {
     if (!notesData[id]) return;
+
+    // Remember this note as the last opened note for this room.
+    saveActiveNoteId(id);
+
+    // Cancel any pending autosave from the previous note.
+    if (saveTimeout) {
+        clearTimeout(saveTimeout);
+        saveTimeout = null;
+    }
+
     activeNoteId = id;
     const item = notesData[id];
+
+    // Remember the exact version we loaded from Firestore.
+    noteBaseContent = item.content || "";
 
     if (currentNoteTitle) currentNoteTitle.textContent = item.title;
     if (editor) editor.value = item.content || "";
@@ -440,10 +613,16 @@ function closeWorkspace() {
 function deleteNote(noteId) {
     if (confirm("Are you sure you want to delete this item?")) {
         delete notesData[noteId];
+
+        db.collection("bokuNoNotesRooms")
+            .doc(currentRoom)
+            .update({
+                [`notes.${noteId}`]: firebase.firestore.FieldValue.delete()
+            });
+
         if (activeNoteId === noteId) {
             closeWorkspace();
         }
-        saveRoomData();
     }
 }
 
@@ -452,6 +631,9 @@ if (findNoteInput) {
         if (e.key === "Enter") {
             const query = findNoteInput.value.trim().toLowerCase();
 
+            if (!query) {
+                return;
+            }
             // Substring search instead of exact match
             const foundId = Object.keys(notesData).find(
                 id => notesData[id].title.toLowerCase().includes(query)
@@ -483,6 +665,12 @@ function renderContent() {
     }
 }
 
+function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 function renderAutoFormattedList(text) {
     const lines = text.split("\n");
     let html = "<ul class='interactive-checklist'>";
@@ -494,12 +682,13 @@ function renderAutoFormattedList(text) {
         const rawText = line.trim();
         const isChecked = rawText.startsWith("~") || /^\[x\]/i.test(rawText);
         const cleanContent = rawText.replace(/^(~|\[(x| )\])\s*/i, "").trim();
+        const safeContent = escapeHtml(cleanContent || "Empty item");
 
         html += `
             <li class="checklist-item">
                 <input type="checkbox" ${isChecked ? "checked" : ""} data-line="${index}">
                 <span class="prefix-number">${displayCounter}.</span>
-                <span class="item-text ${isChecked ? 'completed-item' : ''}">${cleanContent || "Empty item"}</span>
+                <span class="item-text ${isChecked ? 'completed-item' : ''}">${safeContent}</span>
             </li>`;
         displayCounter++;
     });
@@ -537,29 +726,128 @@ function renderAutoFormattedList(text) {
     });
 }
 
-function saveRoomData() {
+async function saveRoomData(noteId = activeNoteId) {
     if (syncStatus) {
         syncStatus.textContent = "Saving...";
         syncStatus.className = "status-saving";
     }
 
     const user = auth.currentUser;
-    if (!user) return;
+    if (!user || !currentRoom || !noteId) return;
 
-    // Use update to ONLY modify notes without touching ownerId or pin
-    db.collection("bokuNoNotesRooms").doc(currentRoom).update({
-        notes: notesData
-    }).then(() => {
+    const note = notesData[noteId];
+
+    if (!note) {
+        console.error("Cannot save: note not found.");
+        return;
+    }
+
+    const saveTimestamp = Date.now();
+
+    const noteToSave = {
+        ...note,
+        updatedAt: saveTimestamp
+    };
+
+    const roomRef = db.collection("bokuNoNotesRooms").doc(currentRoom);
+
+    try {
+        await db.runTransaction(async (transaction) => {
+            const roomSnap = await transaction.get(roomRef);
+
+            if (!roomSnap.exists) {
+                throw new Error("Room no longer exists.");
+            }
+
+            const roomData = roomSnap.data();
+            const remoteNote = roomData.notes && roomData.notes[noteId];
+
+            const remoteContent = remoteNote ? (remoteNote.content || "") : "";
+
+            // Someone else changed this note after we loaded it.
+            if (remoteContent !== noteBaseContent) {
+                throw new Error("NOTE_CONFLICT");
+            }
+
+            // Safe to save because the Firestore version
+            // is still the same version we originally loaded.
+            transaction.update(roomRef, {
+                [`notes.${noteId}`]: noteToSave
+            });
+        });
+
+        // Our version is now the latest known Firestore version.
+        notesData[noteId] = noteToSave;
+        noteBaseContent = noteToSave.content || "";
         if (syncStatus) {
             syncStatus.textContent = "Saved";
             syncStatus.className = "status-saved";
         }
-    }).catch((err) => {
-        console.error("Save error: ", err);
-        if (syncStatus) syncStatus.textContent = "Error";
-    });
-}
 
+    } catch (err) {
+
+        if (err.message === "NOTE_CONFLICT") {
+            console.warn("Note conflict detected.");
+
+            if (syncStatus) {
+                syncStatus.textContent = "Conflict";
+                syncStatus.className = "status-error";
+            }
+
+            try {
+                const latestSnap = await roomRef.get();
+
+                if (latestSnap.exists) {
+                    const latestData = latestSnap.data();
+                    const latestNote =
+                        latestData.notes && latestData.notes[noteId];
+
+                    if (latestNote) {
+                        notesData[noteId] = latestNote;
+
+                        if (editor) {
+                            editor.value = latestNote.content || "";
+                        }
+
+                        noteBaseContent = latestNote.content || "";
+
+                        updateLineNumbers();
+                        applyEditorStyles();
+                        renderContent();
+                        renderNotesList();
+
+                        if (syncStatus) {
+                            syncStatus.textContent = "Latest version loaded";
+                            syncStatus.className = "status-saved";
+                        }
+
+                        alert(
+                            "This note was changed by someone else while you were editing it.\n\n" +
+                            "Your changes were NOT saved, so their work was not overwritten.\n\n" +
+                            "The latest version has now been loaded. You can continue editing."
+                        );
+                    }
+                }
+            } catch (reloadError) {
+                console.error("Could not load latest note:", reloadError);
+
+                alert(
+                    "A conflict was detected and your changes were not saved.\n\n" +
+                    "Please reload the page to get the latest version."
+                );
+            }
+
+            return;
+        }
+
+        console.error("Save error:", err);
+
+        if (syncStatus) {
+            syncStatus.textContent = "Error";
+            syncStatus.className = "status-error";
+        }
+    }
+}
 // Drag Resizer
 let isDragging = false;
 
@@ -638,10 +926,28 @@ if (togglePreviewPaneBtn) {
 }
 
 // Clipboard Panel
-document.addEventListener("copy", () => {
-    const selection = window.getSelection().toString().trim();
+document.addEventListener("copy", (e) => {
+    let selection = "";
+
+    // If copying from the note editor
+    if (e.target === editor && editor) {
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+
+        selection = editor.value.substring(start, end).trim();
+    }
+    // If copying normal text from the webpage
+    else {
+        selection = window.getSelection().toString().trim();
+    }
+
     if (selection && !copiedClips.includes(selection)) {
         copiedClips.push(selection);
+
+        // Save clipboard history
+        saveClipboardHistory();
+
+        // Update the clipboard panel
         updateClipboardUI();
     }
 });
@@ -692,9 +998,12 @@ function updateClipboardUI() {
         removeBtn.innerHTML = "&times;";
         removeBtn.addEventListener("click", () => {
             copiedClips.splice(idx, 1);
+
+            // Save the updated clipboard history
+            saveClipboardHistory();
+
             updateClipboardUI();
         });
-
         actionsDiv.appendChild(insertBtn);
         actionsDiv.appendChild(removeBtn);
         itemDiv.appendChild(textSpan);
@@ -739,35 +1048,79 @@ if (cancelRenameRoomBtn) {
     });
 }
 
-// Submit Rename Form Handler with Document Migration
+// Replace the start of your renameRoomForm submit handler in app.js
 if (renameRoomForm) {
     renameRoomForm.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const newName = newRoomNameInput.value.trim();
+        const rawNewName = newRoomNameInput.value.trim();
         const newPin = newRoomPinInput ? newRoomPinInput.value.trim() : "";
+        // Get the current room name
+        const urlParams = new URLSearchParams(window.location.search);
+        const rawRoom = urlParams.get("room") ||
+            (typeof currentRoom !== "undefined" ? currentRoom : "");
 
-        if (!newName) {
-            alert("Please enter a valid room name.");
+        const currentRoomName = rawRoom.replace(/^(ROOM-|room-)/i, "");
+
+        // If room name is empty, keep the existing room name
+        const finalRoomName = rawNewName || currentRoomName;
+
+        // PIN is optional, but if provided it must be exactly 4 digits
+        if (newPin && !/^\d{4}$/.test(newPin)) {
+            alert("PIN must be exactly 4 digits.");
+            return;
+        }
+
+        // Prevent submitting with absolutely no changes
+        if (!rawNewName && !newPin) {
+            alert("Please enter a new room name or a new PIN.");
             return;
         }
 
         try {
-            const urlParams = new URLSearchParams(window.location.search);
-            const rawRoom = urlParams.get("room") || (typeof currentRoom !== "undefined" ? currentRoom : "");
-            const oldDocId = rawRoom.startsWith("ROOM-") ? rawRoom : `ROOM-${rawRoom}`;
-            const newDocId = newName.startsWith("ROOM-") ? newName : `ROOM-${newName}`;
+            // Format room names consistently
+            const formattedName = finalRoomName
+                .toUpperCase()
+                .replace(/\s+/g, '-');
 
-            // If the name didn't change, only update PIN if provided
+            const cleanOldName = rawRoom.replace(/^(ROOM-|room-)/i, '');
+            const cleanNewName = formattedName.replace(/^(ROOM-|room-)/i, '');
+
+            const oldDocId = `ROOM-${cleanOldName}`;
+            const newDocId = `ROOM-${cleanNewName}`;
+
+            // --------------------------------------------------
+            // CASE 1: Room name stays the same
+            // Only the PIN needs to be changed
+            // --------------------------------------------------
             if (oldDocId === newDocId) {
+
                 if (newPin.length === 4) {
-                    await db.collection("bokuNoNotesRooms").doc(oldDocId).update({ pin: newPin });
+                    const roomRef = db
+                        .collection("bokuNoNotesRooms")
+                        .doc(oldDocId);
+
+                    // Update local PIN FIRST
+                    sessionStorage.setItem("boku_room_pin", newPin);
+                    currentPin = newPin;
+
+                    // Then update Firestore
+                    await roomRef.update({
+                        pin: newPin
+                    });
+
                     alert("Room PIN updated!");
                 }
+
                 return;
             }
 
-            // 1. Fetch existing room data
-            const oldDocRef = db.collection("bokuNoNotesRooms").doc(oldDocId);
+            // --------------------------------------------------
+            // CASE 2: Room name is being changed
+            // --------------------------------------------------
+            const oldDocRef = db
+                .collection("bokuNoNotesRooms")
+                .doc(oldDocId);
+
             const docSnap = await oldDocRef.get();
 
             if (!docSnap.exists) {
@@ -777,24 +1130,54 @@ if (renameRoomForm) {
 
             const existingData = docSnap.data();
 
-            // 2. Prepare new document payload
+            // Keep existing PIN if user did not enter a new one
+            const finalPin = newPin.length === 4
+                ? newPin
+                : existingData.pin;
+
             const newData = {
                 ...existingData,
-                roomName: newName,
-                pin: newPin.length === 4 ? newPin : existingData.pin
+                roomName: formattedName,
+                pin: finalPin
             };
 
-            // 3. Create new document with the new Room ID
-            const newDocRef = db.collection("bokuNoNotesRooms").doc(newDocId);
-            await newDocRef.set(newData);
+            // Check whether the new room name already exists
+            const newDocRef = db
+                .collection("bokuNoNotesRooms")
+                .doc(newDocId);
 
-            // 4. Delete the old room document
-            await oldDocRef.delete();
+            const newDocSnap = await newDocRef.get();
 
-            // 5. Redirect user to the new room URL
-            const finalPin = newPin.length === 4 ? newPin : existingData.pin;
-            alert(`Room successfully renamed to '${newName}'!`);
-            window.location.href = `app.html?room=${newDocId}&pin=${finalPin}`;
+            if (newDocSnap.exists) {
+                alert(
+                    `The room "${cleanNewName}" already exists. Please choose another name.`
+                );
+                return;
+            }
+
+            // Stop listening to the old room before deleting it
+            if (typeof roomUnsubscribe === "function") {
+                roomUnsubscribe();
+                roomUnsubscribe = null;
+            }
+
+            // Rename atomically
+            const batch = db.batch();
+
+            batch.set(newDocRef, newData);
+            batch.delete(oldDocRef);
+
+            await batch.commit();
+
+            // Save the final PIN locally
+            sessionStorage.setItem("boku_room_pin", finalPin);
+            currentPin = finalPin;
+
+            alert(`Room successfully renamed to '${formattedName}'!`);
+
+            // PIN stays out of the URL
+            window.location.href =
+                `app.html?room=${encodeURIComponent(newDocId)}`;
 
         } catch (error) {
             console.error("Error migrating room:", error);

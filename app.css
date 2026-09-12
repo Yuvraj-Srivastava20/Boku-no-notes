@@ -11,7 +11,7 @@
 body[data-theme="light"] {
     --bg-primary: #eff1f5;
     --bg-secondary: #e6e9ef;
-    --text-primary: #4c4f69;
+    --text-primary: #1e1e2e;;
     --text-secondary: #6c6f85;
     --accent: #1e66f5;
     --border: #ccd0da;
@@ -220,12 +220,9 @@ body {
     border-right: 1px solid var(--border);
     overflow: hidden;
     box-sizing: border-box;
-}
-
-.line-numbers div {
-    height: 24px;
     line-height: 24px;
 }
+
 
 #note-editor {
     flex: 1;
@@ -643,4 +640,16 @@ dialog input, dialog select {
 .sidebar-social-links a:hover {
     color: var(--accent);
     transform: translateY(-2px);
+}
+
+/* Force all elements inside the markdown preview to inherit custom font styles */
+.markdown-preview * {
+    font-family: inherit;
+    color: inherit;
+}
+
+/* Optional: Keep code blocks formatted in monospace */
+.markdown-preview code, 
+.markdown-preview pre {
+    font-family: monospace;
 }
