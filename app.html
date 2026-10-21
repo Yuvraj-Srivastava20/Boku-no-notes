@@ -28,9 +28,23 @@
             </div>
 
             <div class="room-info">
-                <span>Room: <strong id="roomCodeDisplay">---</strong></span>
-                <button id="changeRoomBtn" class="btn-room-change" title="Change Room / PIN"><i
-                        class="fa-solid fa-gear"></i> Edit</button>
+
+                <span>
+                    Room: <strong id="roomCodeDisplay">---</strong>
+                </span>
+
+                <div class="room-actions">
+
+                    <button id="shareRoomBtn" class="btn-room-action" title="Share Room" type="button">
+                        <i class="fa-solid fa-share-nodes"></i>
+                    </button>
+
+                    <button id="changeRoomBtn" class="btn-room-action" title="Room Settings" type="button">
+                        <i class="fa-solid fa-gear"></i>
+                    </button>
+
+                </div>
+
             </div>
 
             <hr class="sidebar-divider">
@@ -64,44 +78,74 @@
             </div>
 
             <div class="workspace-active hidden fade-in" id="activeWorkspace">
+
+                <!-- Compact Workspace Controls -->
                 <div class="workspace-header">
+
                     <!-- Mobile Sidebar Toggle Button -->
                     <button id="mobileMenuBtn" class="mobile-menu-btn" aria-label="Toggle Sidebar">
-                        <i class="fa-solid fa-bars"></i> Menu
+                        <i class="fa-solid fa-bars"></i>
                     </button>
-                    <h1 id="currentNoteTitle">Untitled</h1>
-                    <span id="syncStatus" class="status-saved">Saved</span>
-                </div>
 
-                <!-- Text Customization Toolbar -->
-                <div class="text-toolbar">
-                    <label>Font Size:
-                        <select id="fontSizeSelect">
-                            <option value="14px">Small</option>
-                            <option value="16px" selected>Normal</option>
-                            <option value="18px">Large</option>
-                            <option value="22px">Extra Large</option>
-                        </select>
-                    </label>
-                    <label>Font Style:
-                        <select id="fontStyleSelect">
-                            <option value="sans-serif">Sans-Serif</option>
-                            <option value="serif">Serif</option>
-                            <option value="monospace">Monospace</option>
-                            <option value="cursive">Cursive</option>
-                        </select>
-                    </label>
-                    <label>Text Color:
-                        <input type="color" id="textColorPicker" value="#cdd6f4">
-                    </label>
+                    <div class="workspace-controls">
 
-                    <div class="panel-toggle-controls">
-                        <button id="toggleEditorPaneBtn" class="btn-panel-toggle" title="Toggle Editor"><i
-                                class="fa-solid fa-pen-to-square"></i> Editor</button>
-                        <button id="togglePreviewPaneBtn" class="btn-panel-toggle" title="Toggle Preview"><i
-                                class="fa-solid fa-eye"></i> Preview</button>
-                        <button id="toggleClipboardBtn" class="btn-panel-toggle" title="Toggle Side Clipboard"><i
-                                class="fa-solid fa-clipboard"></i> Clipboard (<span id="clipCount">0</span>)</button>
+                        <span id="syncStatus" class="status-saved">Saved</span>
+
+                        <button id="toggleEditorPaneBtn" class="btn-panel-toggle" title="Show/Hide Editor">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                            <span>Edit</span>
+                        </button>
+
+                        <button id="togglePreviewPaneBtn" class="btn-panel-toggle" title="Show/Hide Preview">
+                            <i class="fa-solid fa-eye"></i>
+                            <span>View</span>
+                        </button>
+
+                        <button id="toggleClipboardBtn" class="btn-panel-toggle" title="Open Clipboard">
+                            <i class="fa-solid fa-clipboard"></i>
+                            <span>Clip (<span id="clipCount">0</span>)</span>
+                        </button>
+
+                        <button id="appearanceBtn" class="btn-panel-toggle" title="Text Appearance">
+                            <i class="fa-solid fa-font"></i>
+                            <span>Aa</span>
+                        </button>
+
+                    </div>
+
+                    <!-- Text Appearance Popover -->
+                    <div id="appearancePopover" class="appearance-popover hidden">
+
+                        <div class="appearance-title">
+                            <i class="fa-solid fa-sliders"></i>
+                            Text Appearance
+                        </div>
+
+                        <label>
+                            Size
+                            <select id="fontSizeSelect">
+                                <option value="14px">Small</option>
+                                <option value="16px" selected>Normal</option>
+                                <option value="18px">Large</option>
+                                <option value="22px">Extra Large</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            Font
+                            <select id="fontStyleSelect">
+                                <option value="sans-serif">Sans-Serif</option>
+                                <option value="serif">Serif</option>
+                                <option value="monospace">Monospace</option>
+                                <option value="cursive">Cursive</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            Color
+                            <input type="color" id="textColorPicker" value="#cdd6f4">
+                        </label>
+
                     </div>
                 </div>
 
@@ -204,11 +248,102 @@
     </dialog>
 
     <!-- Mobile Drawer Background Overlay -->
+    <!-- Share Room Dialog -->
+    <dialog id="shareRoomModal" class="pop-in">
+        <div class="modal-card share-room-card">
+
+            <div class="share-room-header">
+                <div>
+                    <h3>
+                        <i class="fa-solid fa-share-nodes"></i>
+                        Share Room
+                    </h3>
+                    <p>Invite people to collaborate in this room.</p>
+                </div>
+
+                <button type="button" id="closeShareRoomBtn" class="close-panel-btn">
+                    &times;
+                </button>
+            </div>
+
+            <div class="share-room-section">
+
+                <label for="shareRoleSelect">Permission</label>
+
+                <select id="shareRoleSelect">
+                    <option value="viewer">Viewer — Read only</option>
+                    <option value="editor">Editor — Can edit notes</option>
+                </select>
+
+                <button type="button" id="generateShareLinkBtn" class="btn-primary share-generate-btn">
+                    <i class="fa-solid fa-link"></i>
+                    Generate Invite Link
+                </button>
+
+            </div>
+
+            <div id="shareLinkSection" class="share-link-section hidden">
+
+                <label for="shareLinkInput">Invite Link</label>
+
+                <div class="share-link-row">
+
+                    <input type="text" id="shareLinkInput" readonly placeholder="Your invite link will appear here">
+
+                    <button type="button" id="copyShareLinkBtn" class="btn-room-action" title="Copy Invite Link">
+                        <i class="fa-solid fa-copy"></i>
+                    </button>
+
+                </div>
+
+                <p class="share-link-warning">
+                    Anyone with this invite link may be able to access the room
+                    according to the selected permission.
+                </p>
+
+            </div>
+
+            <div class="share-room-roles">
+
+                <div class="share-role-card">
+                    <i class="fa-solid fa-eye"></i>
+                    <div>
+                        <strong>Viewer</strong>
+                        <span>Can read notes but cannot edit them.</span>
+                    </div>
+                </div>
+
+                <div class="share-role-card">
+                    <i class="fa-solid fa-pen"></i>
+                    <div>
+                        <strong>Editor</strong>
+                        <span>Can read and edit notes.</span>
+                    </div>
+                </div>
+
+                <div class="share-role-card">
+                    <i class="fa-solid fa-crown"></i>
+                    <div>
+                        <strong>Owner</strong>
+                        <span>Full control of the room.</span>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </dialog>
+
+    <!-- Mobile Drawer Background Overlay -->
     <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+    
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="app.js"></script>
 </body>
 

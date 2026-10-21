@@ -16,9 +16,19 @@ const brandTitle = document.getElementById("brandTitle");
 const roomCodeDisplay = document.getElementById("roomCodeDisplay");
 const themeToggleBtn = document.getElementById("themeToggleBtn");
 const changeRoomBtn = document.getElementById("changeRoomBtn");
+const shareRoomBtn = document.getElementById("shareRoomBtn");
+const shareRoomModal = document.getElementById("shareRoomModal");
+const closeShareRoomBtn = document.getElementById("closeShareRoomBtn");
+const shareRoleSelect = document.getElementById("shareRoleSelect");
+const generateShareLinkBtn = document.getElementById("generateShareLinkBtn");
+const shareLinkSection = document.getElementById("shareLinkSection");
+const shareLinkInput = document.getElementById("shareLinkInput");
+const copyShareLinkBtn = document.getElementById("copyShareLinkBtn");
 const changeRoomModal = document.getElementById("changeRoomModal");
 const changeRoomForm = document.getElementById("changeRoomForm");
 const cancelChangeRoomBtn = document.getElementById("cancelChangeRoomBtn");
+const changeRoomSubmitBtn =
+    changeRoomForm?.querySelector('button[type="submit"]');
 const switchRoomNameInput = document.getElementById("switchRoomNameInput");
 const switchRoomPinInput = document.getElementById("switchRoomPinInput");
 const newRoomPinInput = document.getElementById("newRoomPinInput");
@@ -42,6 +52,32 @@ const fontSizeSelect = document.getElementById("fontSizeSelect");
 const fontStyleSelect = document.getElementById("fontStyleSelect");
 const textColorPicker = document.getElementById("textColorPicker");
 
+const appearanceBtn = document.getElementById("appearanceBtn");
+const appearancePopover = document.getElementById("appearancePopover");
+// Text Appearance Popover
+if (appearanceBtn && appearancePopover) {
+    appearanceBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        appearancePopover.classList.toggle("hidden");
+    });
+
+    appearancePopover.addEventListener("click", (e) => {
+        e.stopPropagation();
+    });
+
+    document.addEventListener("click", () => {
+        appearancePopover.classList.add("hidden");
+    });
+    document.addEventListener("click", () => {
+        document.querySelectorAll(".note-action-menu").forEach(menu => {
+            menu.classList.add("hidden");
+        });
+
+        document.querySelectorAll(".download-submenu").forEach(submenu => {
+            submenu.classList.add("hidden");
+        });
+    });
+}
 const toggleEditorPaneBtn = document.getElementById("toggleEditorPaneBtn");
 const togglePreviewPaneBtn = document.getElementById("togglePreviewPaneBtn");
 const toggleClipboardBtn = document.getElementById("toggleClipboardBtn");
@@ -99,6 +135,83 @@ Boku No Notes supports standard Markdown formatting.
 // Global State
 const urlParams = new URLSearchParams(window.location.search);
 const rawRoomParam = urlParams.get("room");
+const inviteToken = urlParams.get("invite");
+let inviteRole = null;
+function isOwnerUser(user, roomData) {
+    return !!user && !!roomData && roomData.ownerId === user.uid;
+}
+
+function getCurrentRole(user, roomData) {
+    if (isOwnerUser(user, roomData)) {
+        return "owner";
+    }
+
+    if (inviteRole === "viewer") {
+        return "viewer";
+    }
+
+    if (inviteRole === "editor") {
+        return "editor";
+    }
+
+    // Normal Room + PIN access remains editable,
+    // but does not get owner-only room management.
+    return "editor";
+}
+function applyRolePermissions(role) {
+    console.log("Applying role permissions:", role);
+
+    const isOwner = role === "owner";
+    const isViewer = role === "viewer";
+
+    // Only the owner can change room settings
+    if (changeRoomBtn) {
+        changeRoomBtn.classList.toggle("hidden", !isOwner);
+    }
+
+    // Only the owner can share the room
+    if (shareRoomBtn) {
+        shareRoomBtn.classList.toggle("hidden", !isOwner);
+    }
+
+    // Viewers cannot create new notes
+    if (newBtn) {
+        newBtn.disabled = isViewer;
+    }
+
+    // Viewers cannot edit notes
+    if (editor) {
+        editor.readOnly = isViewer;
+    }
+
+    // Viewers use Preview-only reading mode
+    if (toggleEditorPaneBtn) {
+        toggleEditorPaneBtn.classList.toggle("hidden", isViewer);
+    }
+
+    if (togglePreviewPaneBtn) {
+        togglePreviewPaneBtn.classList.toggle("hidden", isViewer);
+    }
+
+    if (isViewer) {
+        if (editorPane) {
+            editorPane.classList.add("hidden");
+        }
+
+        if (output) {
+            output.classList.remove("hidden");
+            output.style.flex = "1 1 100%";
+        }
+
+        if (dragResizer) {
+            dragResizer.classList.add("hidden");
+        }
+    }
+
+    // Store the role so other functions can check it
+    document.body.dataset.roomRole = role || "";
+}
+
 
 // Redirect to home page when clicking the brand title
 if (brandTitle) {
@@ -108,7 +221,7 @@ if (brandTitle) {
 }
 
 // Fallback if room param is missing completely
-if (!rawRoomParam) {
+if (!rawRoomParam && !inviteToken) {
     window.location.href = "index.html";
 }
 
@@ -304,9 +417,60 @@ if (editor) {
     }
 }
 
+// Resolve invite link before connecting to the room
+async function resolveInviteToken() {
+    if (!inviteToken) return true;
+
+    try {
+        const inviteDoc = await db
+            .collection("bokuNoNotesInvites")
+            .doc(inviteToken)
+            .get();
+
+        if (!inviteDoc.exists) {
+            alert("This invite link is invalid or no longer exists.");
+            window.location.href = "index.html";
+            return false;
+        }
+
+        const inviteData = inviteDoc.data();
+
+        if (inviteData.revoked === true) {
+            alert("This invite link has been revoked.");
+            window.location.href = "index.html";
+            return false;
+        }
+
+        if (!inviteData.roomId || !inviteData.role) {
+            alert("This invite link is incomplete.");
+            window.location.href = "index.html";
+            return false;
+        }
+
+        currentRoom = inviteData.roomId;
+        inviteRole = inviteData.role;
+
+        console.log("Invite resolved successfully.");
+        console.log("Invite room:", currentRoom);
+        console.log("Invite role:", inviteRole);
+
+        return true;
+
+    } catch (error) {
+        console.error("Could not resolve invite:", error);
+        alert("Could not open this invite link. Please try again.");
+        window.location.href = "index.html";
+        return false;
+    }
+}
 // Firebase Auth & Real-Time Sync
 auth.signInAnonymously()
-    .then(() => {
+    .then(async () => {
+
+        // Resolve invite before connecting to the room
+        const inviteResolved = await resolveInviteToken();
+
+        if (!inviteResolved) return;
         auth.onAuthStateChanged((user) => {
             if (!user) return;
 
@@ -318,11 +482,16 @@ auth.signInAnonymously()
 
                     // Verify ownership / PIN credentials
                     const isOwner = data.ownerId === user.uid;
-
+                    const currentRole = getCurrentRole(user, data);
+                    applyRolePermissions(currentRole);
                     // Allow room owners to enter without PIN params while enforcing PIN checks for visitors
-                    if (!isOwner && data.pin && String(data.pin) !== String(currentPin)) {
+                    if (
+                        !isOwner &&
+                        !inviteRole &&
+                        data.pin &&
+                        String(data.pin) !== String(currentPin)
+                    ) {
                         alert("Access Denied: Invalid PIN for this room.");
-                        window.location.href = "index.html";
                         return;
                     }
 
@@ -406,6 +575,13 @@ auth.signInAnonymously()
 // UI Controls
 if (newBtn) {
     newBtn.addEventListener("click", () => {
+        const currentRole = document.body.dataset.roomRole;
+
+        if (currentRole === "viewer") {
+            alert("Viewers cannot create new notes.");
+            return;
+        }
+
         itemNameInput.value = "";
         newItemModal.showModal();
     });
@@ -452,9 +628,141 @@ if (newItemForm) {
 // Room Switch Modal Controls
 if (changeRoomBtn) {
     changeRoomBtn.addEventListener("click", () => {
+        const currentRole = document.body.dataset.roomRole;
+
+        if (currentRole !== "owner") {
+            alert("Only the room owner can change room settings.");
+            return;
+        }
         if (switchRoomNameInput) switchRoomNameInput.value = currentRoom.replace(/^ROOM-/, '');
         if (switchRoomPinInput) switchRoomPinInput.value = currentPin;
         if (changeRoomModal) changeRoomModal.showModal();
+    });
+}
+
+// Generate a cryptographically secure invite token
+function generateInviteToken(length = 32) {
+    const characters =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    const randomValues = new Uint32Array(length);
+    crypto.getRandomValues(randomValues);
+
+    let token = "";
+
+    for (let i = 0; i < length; i++) {
+        token += characters[randomValues[i] % characters.length];
+    }
+
+    return token;
+}
+// Share Room Modal Controls
+if (shareRoomBtn && shareRoomModal) {
+    shareRoomBtn.addEventListener("click", () => {
+        const currentRole = document.body.dataset.roomRole;
+
+        if (currentRole !== "owner") {
+            alert("Only the room owner can share the room.");
+            return;
+        }
+
+        if (shareLinkSection) {
+            shareLinkSection.classList.add("hidden");
+        }
+
+        if (shareLinkInput) {
+            shareLinkInput.value = "";
+        }
+
+        if (shareRoleSelect) {
+            shareRoleSelect.value = "viewer";
+        }
+
+        shareRoomModal.showModal();
+    });
+}
+
+if (closeShareRoomBtn && shareRoomModal) {
+    closeShareRoomBtn.addEventListener("click", () => {
+        shareRoomModal.close();
+    });
+}
+if (generateShareLinkBtn) {
+    generateShareLinkBtn.addEventListener("click", async () => {
+        const currentRole = document.body.dataset.roomRole;
+
+        if (currentRole !== "owner") {
+            alert("Only the room owner can create invite links.");
+            return;
+        }
+        const role = shareRoleSelect.value;
+
+        const roleName = role === "viewer"
+            ? "Viewer"
+            : "Editor";
+
+        const inviteToken = generateInviteToken();
+
+        const inviteUrl =
+            `${window.location.origin}${window.location.pathname}?invite=${encodeURIComponent(inviteToken)}`;
+
+        try {
+            const user = auth.currentUser;
+
+            if (!user) {
+                alert("You must be signed in before creating an invite.");
+                return;
+            }
+
+            // Save the invitation in Firestore
+            await db.collection("bokuNoNotesInvites")
+                .doc(inviteToken)
+                .set({
+                    roomId: currentRoom,
+                    role: role,
+                    createdBy: user.uid,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    revoked: false
+                });
+
+            if (shareLinkInput) {
+                shareLinkInput.value = inviteUrl;
+            }
+
+            if (shareLinkSection) {
+                shareLinkSection.classList.remove("hidden");
+            }
+
+            console.log("Share role selected:", roleName);
+            console.log("Invite token saved:", inviteToken);
+            console.log("Invite URL:", inviteUrl);
+
+        } catch (error) {
+            console.error("Could not create invite:", error);
+            alert("Could not create the invite link. Please try again.");
+        }
+    });
+}
+if (copyShareLinkBtn) {
+    copyShareLinkBtn.addEventListener("click", async () => {
+        if (!shareLinkInput || !shareLinkInput.value) return;
+
+        try {
+            await navigator.clipboard.writeText(shareLinkInput.value);
+
+            const originalHtml = copyShareLinkBtn.innerHTML;
+
+            copyShareLinkBtn.innerHTML =
+                '<i class="fa-solid fa-check"></i>';
+
+            setTimeout(() => {
+                copyShareLinkBtn.innerHTML = originalHtml;
+            }, 1200);
+
+        } catch (error) {
+            console.error("Could not copy share link:", error);
+            alert("Could not copy the invite link.");
+        }
     });
 }
 
@@ -467,16 +775,23 @@ if (cancelChangeRoomBtn) {
 if (changeRoomForm) {
     changeRoomForm.addEventListener("submit", async (e) => {
         e.preventDefault();
+
+        setButtonLoading(changeRoomSubmitBtn, "Opening Room...");
+
         const rawInput = switchRoomNameInput.value.trim();
         const newPin = switchRoomPinInput.value.trim();
 
         if (!rawInput || !newPin) {
             alert("Please enter both the room code and 4-digit PIN.");
+            resetButtonLoading(changeRoomSubmitBtn);
+
             return;
         }
 
         if (!/^\d{4}$/.test(newPin)) {
             alert("PIN must be exactly 4 digits.");
+            resetButtonLoading(changeRoomSubmitBtn);
+
             return;
         }
 
@@ -516,6 +831,8 @@ if (changeRoomForm) {
                 `app.html?room=${encodeURIComponent(targetRoomCode)}`
             );
         } catch (err) {
+            resetButtonLoading(changeRoomSubmitBtn);
+
             alert("Error validating room details: " + err.message);
         }
     });
@@ -534,6 +851,281 @@ if (themeToggleBtn) {
         }
     });
 }
+
+async function exportNote(noteId, extension) {
+    const note = notesData[noteId];
+
+    console.log("Exporting note:", noteId, note?.title);
+
+    if (!note) {
+        alert("Note not found.");
+        return;
+    }
+
+    let filename = (note.title || "Untitled")
+        .trim()
+        .replace(/[<>:"/\\|?*\x00-\x1F]/g, "")
+        .replace(/\s+/g, "-");
+
+    if (!filename) {
+        filename = "Untitled";
+    }
+
+    /* -------------------------
+       Markdown / Text export
+       ------------------------- */
+
+    if (extension === ".md" || extension === ".txt") {
+        const content = note.content || "";
+
+        filename += extension;
+
+        const blob = new Blob(
+            [content],
+            {
+                type: extension === ".md"
+                    ? "text/markdown;charset=utf-8"
+                    : "text/plain;charset=utf-8"
+            }
+        );
+
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        URL.revokeObjectURL(url);
+
+        return;
+    }
+
+    /* -------------------------
+       PDF export
+       ------------------------- */
+
+    if (extension === ".pdf") {
+        const currentPreview = document.getElementById("output");
+
+        if (!currentPreview) {
+            alert("Preview area not found.");
+            return;
+        }
+
+        /* Create an independent full-height preview for PDF export */
+        const preview = document.createElement("div");
+
+        preview.id = "pdf-export-preview";
+
+        preview.className = "pdf-export-preview";
+
+        preview.style.border = "none";
+        preview.style.borderRadius = "0";
+
+        preview.style.position = "absolute";
+        preview.style.left = "-10000px";
+        preview.style.top = "0";
+        preview.style.display = "block";
+
+        const previewWidth = currentPreview.getBoundingClientRect().width;
+
+        preview.style.width = `${previewWidth}px`;
+        preview.style.setProperty("height", "auto", "important");
+        preview.style.setProperty("min-height", "0", "important");
+        preview.style.setProperty("max-height", "none", "important");
+
+        preview.style.overflow = "visible";
+        preview.style.overflowY = "visible";
+        preview.style.overflowX = "visible";
+
+        preview.style.margin = "0";
+        preview.style.padding = getComputedStyle(currentPreview).padding;
+        preview.style.boxSizing = "border-box";
+
+        if (note.type === "list") {
+            const lines = (note.content || "").split("\n");
+
+            let html = "<ul class='interactive-checklist'>";
+            let displayCounter = 1;
+
+            lines.forEach((line) => {
+                if (!line.trim()) return;
+
+                const rawText = line.trim();
+                const isChecked =
+                    rawText.startsWith("~") ||
+                    /^\[x\]/i.test(rawText);
+
+                const cleanContent = rawText
+                    .replace(/^(~|\[(x| )\])\s*/i, "")
+                    .trim();
+
+                const safeContent = escapeHtml(
+                    cleanContent || "Empty item"
+                );
+
+                html += `
+            <li class="checklist-item">
+                <input type="checkbox" ${isChecked ? "checked" : ""}>
+                <span class="prefix-number">${displayCounter}.</span>
+                <span class="item-text ${isChecked ? "completed-item" : ""}">
+                    ${safeContent}
+                </span>
+            </li>
+        `;
+
+                displayCounter++;
+            });
+
+            html += "</ul>";
+
+            preview.innerHTML = html;
+
+        } else {
+            if (typeof marked !== "undefined") {
+                const rawHtml = marked.parse(note.content || "");
+
+                preview.innerHTML =
+                    typeof DOMPurify !== "undefined"
+                        ? DOMPurify.sanitize(rawHtml)
+                        : rawHtml;
+            } else {
+                preview.textContent = note.content || "";
+            }
+
+            /* Keep PDF rendering consistent with the live Preview */
+            preview.style.whiteSpace = getComputedStyle(currentPreview).whiteSpace;
+            preview.style.wordBreak = getComputedStyle(currentPreview).wordBreak;
+            preview.style.overflowWrap = getComputedStyle(currentPreview).overflowWrap;
+            preview.style.fontSize = getComputedStyle(currentPreview).fontSize;
+            preview.style.fontFamily = getComputedStyle(currentPreview).fontFamily;
+            preview.style.color = getComputedStyle(currentPreview).color;
+            preview.style.lineHeight = getComputedStyle(currentPreview).lineHeight;
+        }
+
+        document.body.appendChild(preview);
+
+        await new Promise(resolve => requestAnimationFrame(resolve));
+
+        const originalDisplay = preview.style.display;
+
+        preview.style.display = "block";
+
+        try {
+            const previewStyle = getComputedStyle(preview);
+
+            const previewBackground =
+                previewStyle.backgroundColor || "rgb(255, 255, 255)";
+
+            /* Measure the complete rendered height */
+            const fullWidth = preview.scrollWidth;
+            const fullHeight = preview.scrollHeight;
+
+            const canvas = await html2canvas(preview, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: previewBackground,
+                width: fullWidth,
+                height: fullHeight,
+                windowWidth: fullWidth,
+                windowHeight: fullHeight,
+                scrollX: 0,
+                scrollY: 0
+            });
+
+            const imgData = canvas.toDataURL("image/png");
+
+            const { jsPDF } = window.jspdf;
+
+            const pdf = new jsPDF("p", "mm", "a4");
+            const rgbMatch = previewBackground.match(
+                /rgba?\(\s*(\d+),\s*(\d+),\s*(\d+)/
+            );
+
+            if (rgbMatch) {
+                pdf.setFillColor(
+                    Number(rgbMatch[1]),
+                    Number(rgbMatch[2]),
+                    Number(rgbMatch[3])
+                );
+
+                pdf.rect(
+                    0,
+                    0,
+                    pdf.internal.pageSize.getWidth(),
+                    pdf.internal.pageSize.getHeight(),
+                    "F"
+                );
+            }
+
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+
+            const imageWidth = pageWidth;
+            const imageHeight =
+                (canvas.height * imageWidth) / canvas.width;
+
+            let heightLeft = imageHeight;
+            let position = 0;
+
+            pdf.addImage(
+                imgData,
+                "PNG",
+                0,
+                position,
+                imageWidth,
+                imageHeight
+            );
+
+            heightLeft -= pageHeight;
+
+            while (heightLeft > 0) {
+                position = -(imageHeight - heightLeft);
+
+                pdf.addPage();
+                if (rgbMatch) {
+                    pdf.setFillColor(
+                        Number(rgbMatch[1]),
+                        Number(rgbMatch[2]),
+                        Number(rgbMatch[3])
+                    );
+
+                    pdf.rect(
+                        0,
+                        0,
+                        pdf.internal.pageSize.getWidth(),
+                        pdf.internal.pageSize.getHeight(),
+                        "F"
+                    );
+                }
+
+                pdf.addImage(
+                    imgData,
+                    "PNG",
+                    0,
+                    position,
+                    imageWidth,
+                    imageHeight
+                );
+
+                heightLeft -= pageHeight;
+            }
+
+            pdf.save(filename + ".pdf");
+
+        } catch (error) {
+            console.error("PDF export failed:", error);
+            alert("Could not export PDF.");
+        } finally {
+            preview.remove();
+        }
+    }
+}
+
 function renderNotesList() {
     if (!notesList) return;
     notesList.innerHTML = "";
@@ -560,16 +1152,153 @@ function renderNotesList() {
 
             titleSpan.addEventListener("click", () => openNote(id));
 
-            const delBtn = document.createElement("button");
-            delBtn.className = "delete-btn";
-            delBtn.innerHTML = "&times;";
-            delBtn.addEventListener("click", (e) => {
+            const noteMenuBtn = document.createElement("button");
+            noteMenuBtn.className = "note-menu-btn";
+            noteMenuBtn.innerHTML = '<i class="fa-solid fa-ellipsis-vertical"></i>';
+            noteMenuBtn.title = "Note actions";
+
+            const noteMenu = document.createElement("div");
+            noteMenu.className = "note-action-menu hidden";
+
+            /* Share Note */
+            const shareNoteBtn = document.createElement("button");
+            shareNoteBtn.type = "button";
+            shareNoteBtn.innerHTML =
+                '<i class="fa-solid fa-share-nodes"></i> Share Note';
+
+            /* Download Row */
+            const downloadBtn = document.createElement("button");
+            downloadBtn.type = "button";
+            downloadBtn.className = "download-menu-btn";
+            downloadBtn.innerHTML =
+                '<i class="fa-solid fa-download"></i> Download <span class="submenu-arrow">▶</span>';
+
+            /* Download Submenu */
+            const downloadSubmenu = document.createElement("div");
+            downloadSubmenu.className = "download-submenu hidden";
+
+            /* Export PDF */
+            const exportPdfBtn = document.createElement("button");
+            exportPdfBtn.type = "button";
+            exportPdfBtn.dataset.noteId = id;
+            exportPdfBtn.innerHTML =
+                '<i class="fa-solid fa-file-pdf"></i> Export as PDF';
+
+            /* Export Markdown */
+            const exportMdBtn = document.createElement("button");
+            exportMdBtn.type = "button";
+            exportMdBtn.innerHTML =
+                '<i class="fa-brands fa-markdown"></i> Export Markdown';
+
+            /* Export Text */
+            const exportTxtBtn = document.createElement("button");
+            exportTxtBtn.type = "button";
+            exportTxtBtn.innerHTML =
+                '<i class="fa-solid fa-file-lines"></i> Export Text';
+
+            downloadSubmenu.appendChild(exportPdfBtn);
+            downloadSubmenu.appendChild(exportMdBtn);
+            downloadSubmenu.appendChild(exportTxtBtn);
+
+            /* Delete */
+            const deleteBtn = document.createElement("button");
+            deleteBtn.type = "button";
+            deleteBtn.className = "danger-action";
+            deleteBtn.innerHTML =
+                '<i class="fa-solid fa-trash"></i> Delete Note';
+
+            /* Build menu */
+            noteMenu.appendChild(shareNoteBtn);
+            noteMenu.appendChild(downloadBtn);
+            noteMenu.appendChild(downloadSubmenu);
+
+            const menuDivider = document.createElement("div");
+            menuDivider.className = "note-menu-divider";
+
+            noteMenu.appendChild(menuDivider);
+            noteMenu.appendChild(deleteBtn);
+
+            noteMenuBtn.addEventListener("click", (e) => {
                 e.stopPropagation();
+
+                document.querySelectorAll(".note-action-menu").forEach(menu => {
+                    if (menu !== noteMenu) {
+                        menu.classList.add("hidden");
+                    }
+                });
+
+                noteMenu.classList.toggle("hidden");
+
+                if (noteMenu.classList.contains("hidden")) {
+                    downloadSubmenu.classList.add("hidden");
+                }
+            });
+
+            shareNoteBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+
+                // Sharing will be connected in the next step.
+                alert("Share Note will be added next.");
+            });
+
+            /* Toggle Download submenu */
+            downloadBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+
+                downloadSubmenu.classList.toggle("hidden");
+            });
+
+            /* PDF */
+            exportPdfBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+
+                downloadSubmenu.classList.add("hidden");
+                noteMenu.classList.add("hidden");
+
+                const selectedNoteId = exportPdfBtn.dataset.noteId;
+
+                console.log(
+                    "PDF export requested:",
+                    selectedNoteId,
+                    notesData[selectedNoteId]?.title
+                );
+
+                exportNote(selectedNoteId, ".pdf");
+            });
+
+            /* Markdown */
+            exportMdBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+
+                exportNote(id, ".md");
+
+                downloadSubmenu.classList.add("hidden");
+                noteMenu.classList.add("hidden");
+            });
+
+            /* Text */
+            exportTxtBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+
+                exportNote(id, ".txt");
+
+                downloadSubmenu.classList.add("hidden");
+                noteMenu.classList.add("hidden");
+            });
+
+            /* Delete */
+            deleteBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+
+                noteMenu.classList.add("hidden");
+                downloadSubmenu.classList.add("hidden");
+
                 deleteNote(id);
             });
 
             div.appendChild(titleSpan);
-            div.appendChild(delBtn);
+            div.appendChild(noteMenuBtn);
+            div.appendChild(noteMenu);
             notesList.appendChild(div);
         });
 }
@@ -611,6 +1340,13 @@ function closeWorkspace() {
 }
 
 function deleteNote(noteId) {
+    const currentRole = document.body.dataset.roomRole;
+
+    if (currentRole === "viewer") {
+        alert("Viewers cannot delete notes.");
+        return;
+    }
+
     if (confirm("Are you sure you want to delete this item?")) {
         delete notesData[noteId];
 
@@ -727,6 +1463,12 @@ function renderAutoFormattedList(text) {
 }
 
 async function saveRoomData(noteId = activeNoteId) {
+    const currentRole = document.body.dataset.roomRole;
+
+    if (currentRole === "viewer") {
+        console.warn("Viewer cannot save notes.");
+        return;
+    }
     if (syncStatus) {
         syncStatus.textContent = "Saving...";
         syncStatus.className = "status-saving";
@@ -1021,7 +1763,29 @@ const renameRoomSection = document.getElementById("renameRoomSection");
 const renameRoomForm = document.getElementById("renameRoomForm");
 const newRoomNameInput = document.getElementById("newRoomNameInput");
 const cancelRenameRoomBtn = document.getElementById("cancelRenameRoomBtn");
+const renameRoomSubmitBtn =
+    renameRoomForm?.querySelector('button[type="submit"]');
 
+function setButtonLoading(button, loadingText) {
+    if (!button) return;
+
+    if (!button.dataset.originalText) {
+        button.dataset.originalText = button.textContent.trim();
+    }
+
+    button.disabled = true;
+    button.textContent = loadingText;
+}
+
+function resetButtonLoading(button) {
+    if (!button) return;
+
+    button.disabled = false;
+
+    if (button.dataset.originalText) {
+        button.textContent = button.dataset.originalText;
+    }
+}
 // Tab Switching Handler
 if (tabJoinBtn && tabRenameBtn) {
     tabJoinBtn.addEventListener("click", () => {
@@ -1052,6 +1816,7 @@ if (cancelRenameRoomBtn) {
 if (renameRoomForm) {
     renameRoomForm.addEventListener("submit", async (e) => {
         e.preventDefault();
+        setButtonLoading(renameRoomSubmitBtn, "Renaming Room...");
         const rawNewName = newRoomNameInput.value.trim();
         const newPin = newRoomPinInput ? newRoomPinInput.value.trim() : "";
         // Get the current room name
@@ -1067,12 +1832,16 @@ if (renameRoomForm) {
         // PIN is optional, but if provided it must be exactly 4 digits
         if (newPin && !/^\d{4}$/.test(newPin)) {
             alert("PIN must be exactly 4 digits.");
+            resetButtonLoading(renameRoomSubmitBtn);
+
             return;
         }
 
         // Prevent submitting with absolutely no changes
         if (!rawNewName && !newPin) {
             alert("Please enter a new room name or a new PIN.");
+            resetButtonLoading(renameRoomSubmitBtn);
+
             return;
         }
 
@@ -1125,6 +1894,8 @@ if (renameRoomForm) {
 
             if (!docSnap.exists) {
                 alert("Original room document not found.");
+                resetButtonLoading(renameRoomSubmitBtn);
+
                 return;
             }
 
@@ -1152,6 +1923,8 @@ if (renameRoomForm) {
                 alert(
                     `The room "${cleanNewName}" already exists. Please choose another name.`
                 );
+                resetButtonLoading(renameRoomSubmitBtn);
+
                 return;
             }
 
@@ -1181,6 +1954,8 @@ if (renameRoomForm) {
 
         } catch (error) {
             console.error("Error migrating room:", error);
+            resetButtonLoading(renameRoomSubmitBtn);
+
             alert("Failed to rename room: " + error.message);
         }
     });
@@ -1211,3 +1986,34 @@ if (mobileMenuBtn && sidebar && sidebarOverlay) {
         }
     });
 }
+
+window.addEventListener("pageshow", async (event) => {
+    // Reset buttons when returning to this page
+    resetButtonLoading(changeRoomSubmitBtn);
+    resetButtonLoading(renameRoomSubmitBtn);
+
+    // If browser restored this page from its back/forward cache,
+    // validate the room again.
+    if (event.persisted) {
+        const roomId = getRoomId();
+
+        try {
+            const docSnap = await db.collection("bokuNoNotesRooms")
+                .doc(roomId)
+                .get();
+
+            if (!docSnap.exists) {
+                alert("This room no longer exists.");
+                window.location.href = "index.html";
+                return;
+            }
+
+            console.log("Room still exists:", roomId);
+
+        } catch (error) {
+            console.error("Error checking restored room:", error);
+            alert("Could not verify this room.");
+            window.location.href = "index.html";
+        }
+    }
+});

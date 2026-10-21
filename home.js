@@ -13,7 +13,7 @@ if (!firebase.apps.length) {
 }
 const db = firebase.firestore();
 
-const DEFAULT_README_VERSION = 2;
+const DEFAULT_README_VERSION = 3;
 
 const defaultReadmeContent = `# Welcome to Boku No Notes!
 
@@ -21,13 +21,13 @@ Welcome to your workspace! Boku No Notes lets you create, organize, and edit not
 
 ## Getting Started
 
-1. **Create an Item:** Click **+ New Item** in the sidebar to create a Note or Checklist.
-2. **Edit Your Note:** Select an item from the sidebar and start typing in the editor.
-3. **Checklist:** Create a Checklist and add one task per line. Use the checkboxes in the preview to mark tasks as completed.
-4. **Live Preview:** Your Markdown content is displayed automatically in the preview panel.
-5. **Resize the Workspace:** Drag the divider between the editor and preview to adjust their widths.
-6. **Toggle Panels:** Use the **Editor**, **Preview**, and **Clipboard** buttons to show or hide panels.
-7. **Clipboard:** Copy text anywhere on the page to save it in the Clipboard panel. Use **Insert** to quickly add a saved clip to your note.
+1. **Create a Room:** From the home page, choose **Random Room** or **Custom Room**. Custom rooms use a room name and a 4-digit PIN.
+2. **Join a Room:** Enter the room name and its 4-digit PIN on the home page.
+3. **Create an Item:** Click **+ New Item** in the sidebar to create a Note or Checklist.
+4. **Edit Your Note:** Select a note from the sidebar and start typing in the editor.
+5. **Create a Checklist:** Choose **Checklist** when creating a new item, then add one task per line.
+6. **Live Preview:** Your Markdown content is rendered automatically in the Preview panel.
+7. **Search Notes:** Use the search box in the sidebar to quickly find a note or checklist.
 
 ---
 
@@ -48,12 +48,80 @@ Boku No Notes supports standard Markdown formatting.
 
 ---
 
-## Tips
+## Workspace Controls
+
+### Editor & Preview
+
+Use the **Editor** and **Preview** controls to show or hide the writing and preview panels.
+
+You can also drag the divider between the Editor and Preview to adjust the workspace layout.
+
+### Clipboard
+
+Use **Clipboard** to open the clipboard panel.
+
+Text copied from the page can be saved there, and saved clips can be inserted into your note.
+
+### Text Appearance
+
+Use **Aa** to change your personal:
+
+- Font size
+- Font style
+- Text color
+
+These appearance settings are personal to your browser and do not change the note for other users.
+
+---
+
+## Sharing & Permissions
+
+The room owner can share the room using invitation links.
+
+### Owner
+
+The **Owner** can manage the room, share it, change room settings, and work with the notes.
+
+### Editor
+
+An **Editor** can create, edit, and delete notes and checklists, but does not have owner-only room management controls.
+
+### Viewer
+
+A **Viewer** can read the room but cannot edit notes or create new ones. Viewers use the Preview-only workspace.
+
+To share a room, open **Share Room**, select **Viewer** or **Editor**, and generate an invitation link.
+
+---
+
+## Export Your Notes
+
+Notes can be exported as:
+
+- **PDF**
+- **Markdown**
+- **Text**
+
+Open the note's **⋮** menu and choose **Download**.
+
+---
+
+## Saving & Collaboration
 
 - Changes are saved automatically.
-- Your room is shared with other people using the same room code.
-- Keep your room PIN private.
-- Use the search box in the sidebar to quickly find a note.
+- Notes are synchronized through the room.
+- Multiple users can work in the same room according to their assigned permissions.
+- Keep your room PIN private when using normal room access.
+
+---
+
+## Tips
+
+- Use Markdown to structure your notes.
+- Use Checklists for tasks and to-do items.
+- Use the search box to find notes quickly.
+- Use the Clipboard for temporary snippets.
+- Use invitation links when sharing a room with different permissions.
 
 **Enjoy using Boku No Notes!**`;
 

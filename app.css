@@ -11,7 +11,8 @@
 body[data-theme="light"] {
     --bg-primary: #eff1f5;
     --bg-secondary: #e6e9ef;
-    --text-primary: #1e1e2e;;
+    --text-primary: #1e1e2e;
+    ;
     --text-secondary: #6c6f85;
     --accent: #1e66f5;
     --border: #ccd0da;
@@ -70,6 +71,30 @@ body {
     justify-content: space-between;
 }
 
+.room-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-room-action {
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.btn-room-action:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
 .btn-room-change {
     background: var(--input-bg);
     color: var(--text-primary);
@@ -111,13 +136,69 @@ body {
     border-left: 4px solid var(--accent);
 }
 
-.delete-btn {
+.note-item {
+    position: relative;
+}
+
+.note-menu-btn {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background: transparent;
+    color: var(--text-secondary);
     border: none;
-    color: #f38ba8;
-    font-size: 1.1rem;
+    border-radius: 4px;
     cursor: pointer;
-    padding: 0 4px;
+}
+
+.note-menu-btn:hover {
+    background: var(--bg-secondary);
+    color: var(--accent);
+}
+
+.note-action-menu {
+    position: absolute;
+    right: 8px;
+    top: calc(100% - 2px);
+    min-width: 175px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+    z-index: 50;
+}
+
+.note-action-menu button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 9px;
+    background: transparent;
+    color: var(--text-primary);
+    border: none;
+    border-radius: 4px;
+    text-align: left;
+    cursor: pointer;
+    font-size: 0.82rem;
+}
+
+.note-action-menu button:hover {
+    background: var(--input-bg);
+}
+
+.note-action-menu .danger-action {
+    color: #f38ba8;
+}
+
+.note-menu-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
 }
 
 .workspace {
@@ -147,31 +228,84 @@ body {
     margin-bottom: 15px;
 }
 
-.text-toolbar {
+.workspace-header {
+    position: relative;
     display: flex;
-    gap: 15px;
     align-items: center;
-    margin-bottom: 10px;
-    background: var(--bg-secondary);
-    padding: 8px 12px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    flex-wrap: wrap;
+    justify-content: space-between;
+    min-height: 42px;
+    margin-bottom: 8px;
 }
 
-.text-toolbar select, .text-toolbar input[type="color"] {
+.workspace-controls {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-panel-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
     background: var(--input-bg);
     color: var(--text-primary);
     border: 1px solid var(--border);
-    padding: 4px 8px;
-    border-radius: 4px;
+    padding: 5px 8px;
+    border-radius: 5px;
     cursor: pointer;
+    font-size: 0.8rem;
+    white-space: nowrap;
 }
 
-.panel-toggle-controls {
-    margin-left: auto;
-    display: flex;
+.btn-panel-toggle:hover {
+    border-color: var(--accent);
+}
+
+.appearance-popover {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    width: 230px;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+}
+
+.appearance-title {
+    font-weight: 600;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.appearance-popover label {
+    display: grid;
+    grid-template-columns: 55px 1fr;
+    align-items: center;
     gap: 8px;
+    margin-top: 8px;
+    font-size: 0.85rem;
+}
+
+.appearance-popover select,
+.appearance-popover input[type="color"] {
+    width: 100%;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 5px;
+}
+
+.appearance-popover input[type="color"] {
+    height: 30px;
+    padding: 2px;
+    cursor: pointer;
 }
 
 .btn-panel-toggle {
@@ -266,6 +400,11 @@ body {
     word-break: break-word;
     overflow-wrap: break-word;
     min-width: 0;
+}
+.markdown-preview ol,
+.markdown-preview ul {
+    padding-left: 2em;
+    margin-left: 0;
 }
 
 .clipboard-panel {
@@ -363,11 +502,21 @@ body {
     opacity: 0.6;
 }
 
-.status-typing { color: #f9e2af; }
-.status-saving { color: #89b4fa; }
-.status-saved { color: #a6e3a1; }
+.status-typing {
+    color: #f9e2af;
+}
 
-.hidden { display: none !important; }
+.status-saving {
+    color: #89b4fa;
+}
+
+.status-saved {
+    color: #a6e3a1;
+}
+
+.hidden {
+    display: none !important;
+}
 
 dialog {
     margin: auto;
@@ -384,7 +533,8 @@ dialog form {
     gap: 10px;
 }
 
-dialog input, dialog select {
+dialog input,
+dialog select {
     padding: 8px;
     border-radius: 5px;
     border: 1px solid var(--border);
@@ -564,7 +714,7 @@ dialog input, dialog select {
         flex-direction: column !important;
     }
 
-    .editor-wrapper, 
+    .editor-wrapper,
     .markdown-preview {
         width: 100% !important;
         height: 50% !important;
@@ -574,15 +724,27 @@ dialog input, dialog select {
         display: none !important;
     }
 
-    .text-toolbar {
-        flex-wrap: wrap;
-        gap: 8px;
+    .workspace-header {
+        min-height: 38px;
+        margin-bottom: 6px;
     }
 
-    .panel-toggle-controls {
-        width: 100%;
-        margin-top: 5px;
-        justify-content: space-between;
+    .workspace-controls {
+        gap: 4px;
+    }
+
+    .btn-panel-toggle {
+        padding: 5px 7px;
+        font-size: 0.78rem;
+    }
+
+    .btn-panel-toggle span {
+        display: inline;
+    }
+
+    .appearance-popover {
+        right: 0;
+        width: 215px;
     }
 
     /* Fixed Slide-over Clipboard Drawer */
@@ -607,23 +769,28 @@ dialog input, dialog select {
 }
 
 @media screen and (max-width: 480px) {
-    .workspace-header h1 {
-        font-size: 1.2rem;
+    .workspace-header {
+        min-height: 36px;
     }
 
-    .text-toolbar label {
-        font-size: 0.8rem;
+    .workspace-controls {
+        gap: 3px;
     }
 
     .btn-panel-toggle {
-        padding: 0.3rem 0.5rem;
-        font-size: 0.8rem;
+        padding: 5px 6px;
+        font-size: 0.75rem;
+    }
+
+    .btn-panel-toggle span {
+        display: inline;
     }
 
     dialog {
         width: 90% !important;
     }
 }
+
 .sidebar-social-links {
     display: flex;
     justify-content: center;
@@ -649,7 +816,137 @@ dialog input, dialog select {
 }
 
 /* Optional: Keep code blocks formatted in monospace */
-.markdown-preview code, 
+.markdown-preview code,
 .markdown-preview pre {
     font-family: monospace;
+}
+
+/* ==========================================================================
+   Share Room
+   ========================================================================== */
+
+.share-room-card {
+    width: 430px;
+    max-width: 100%;
+}
+
+.share-room-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 15px;
+    margin-bottom: 18px;
+}
+
+.share-room-header h3 {
+    margin-bottom: 5px;
+}
+
+.share-room-header p {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.share-room-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.share-room-section label,
+.share-link-section label {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.share-room-section select {
+    width: 100%;
+}
+
+.share-generate-btn {
+    width: 100%;
+    margin-top: 5px;
+}
+
+.share-link-section {
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+}
+
+.share-link-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.share-link-row input {
+    flex: 1;
+    min-width: 0;
+}
+
+.share-link-row .btn-room-action {
+    flex-shrink: 0;
+}
+
+.share-link-warning {
+    margin-top: 8px;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    line-height: 1.4;
+}
+
+.share-room-roles {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+}
+
+.share-role-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px;
+    border-radius: 6px;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+}
+
+.share-role-card > i {
+    width: 22px;
+    text-align: center;
+    color: var(--accent);
+    margin-top: 2px;
+}
+
+.share-role-card div {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.share-role-card strong {
+    font-size: 0.85rem;
+}
+
+.share-role-card span {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+@media screen and (max-width: 480px) {
+    .share-room-card {
+        width: 90vw;
+    }
+
+    .share-link-row {
+        flex-direction: column;
+    }
+
+    .share-link-row .btn-room-action {
+        width: 100%;
+    }
 }
