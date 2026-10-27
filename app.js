@@ -54,30 +54,30 @@ const textColorPicker = document.getElementById("textColorPicker");
 
 const appearanceBtn = document.getElementById("appearanceBtn");
 const appearancePopover = document.getElementById("appearancePopover");
-// Text Appearance Popover
-if (appearanceBtn && appearancePopover) {
-    appearanceBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        appearancePopover.classList.toggle("hidden");
-    });
-
-    appearancePopover.addEventListener("click", (e) => {
-        e.stopPropagation();
-    });
-
-    document.addEventListener("click", () => {
-        appearancePopover.classList.add("hidden");
-    });
-    document.addEventListener("click", () => {
-        document.querySelectorAll(".note-action-menu").forEach(menu => {
-            menu.classList.add("hidden");
+    // Text Appearance Popover
+    if (appearanceBtn && appearancePopover) {
+        appearanceBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            appearancePopover.classList.toggle("hidden");
         });
 
-        document.querySelectorAll(".download-submenu").forEach(submenu => {
-            submenu.classList.add("hidden");
+        appearancePopover.addEventListener("click", (e) => {
+            e.stopPropagation();
         });
-    });
-}
+
+        document.addEventListener("click", () => {
+            appearancePopover.classList.add("hidden");
+        });
+        document.addEventListener("click", () => {
+            document.querySelectorAll(".note-action-menu").forEach(menu => {
+                menu.classList.add("hidden");
+            });
+
+            document.querySelectorAll(".download-submenu").forEach(submenu => {
+                submenu.classList.add("hidden");
+            });
+        });
+    }
 const toggleEditorPaneBtn = document.getElementById("toggleEditorPaneBtn");
 const togglePreviewPaneBtn = document.getElementById("togglePreviewPaneBtn");
 const toggleClipboardBtn = document.getElementById("toggleClipboardBtn");
@@ -1384,83 +1384,83 @@ if (findNoteInput) {
     });
 }
 
-function renderContent() {
-    if (!activeNoteId || !notesData[activeNoteId] || !output) return;
-    const currentItem = notesData[activeNoteId];
+    function renderContent() {
+        if (!activeNoteId || !notesData[activeNoteId] || !output) return;
+        const currentItem = notesData[activeNoteId];
 
-    if (currentItem.type === "list") {
-        renderAutoFormattedList(editor.value);
-    } else {
-        if (typeof marked !== "undefined") {
-            const rawHtml = marked.parse(editor.value || "");
-            // Sanitize HTML output using DOMPurify
-            output.innerHTML = typeof DOMPurify !== "undefined" ? DOMPurify.sanitize(rawHtml) : rawHtml;
+        if (currentItem.type === "list") {
+            renderAutoFormattedList(editor.value);
         } else {
-            output.textContent = editor.value;
+            if (typeof marked !== "undefined") {
+                const rawHtml = marked.parse(editor.value || "");
+                // Sanitize HTML output using DOMPurify
+                output.innerHTML = typeof DOMPurify !== "undefined" ? DOMPurify.sanitize(rawHtml) : rawHtml;
+            } else {
+                output.textContent = editor.value;
+            }
         }
     }
-}
 
-function escapeHtml(text) {
-    const div = document.createElement("div");
-    div.textContent = text;
-    return div.innerHTML;
-}
+    function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+    }
 
-function renderAutoFormattedList(text) {
-    const lines = text.split("\n");
-    let html = "<ul class='interactive-checklist'>";
-    let displayCounter = 1;
+    function renderAutoFormattedList(text) {
+        const lines = text.split("\n");
+        let html = "<ul class='interactive-checklist'>";
+        let displayCounter = 1;
 
-    lines.forEach((line, index) => {
-        if (!line.trim()) return;
+        lines.forEach((line, index) => {
+            if (!line.trim()) return;
 
-        const rawText = line.trim();
-        const isChecked = rawText.startsWith("~") || /^\[x\]/i.test(rawText);
-        const cleanContent = rawText.replace(/^(~|\[(x| )\])\s*/i, "").trim();
-        const safeContent = escapeHtml(cleanContent || "Empty item");
+            const rawText = line.trim();
+            const isChecked = rawText.startsWith("~") || /^\[x\]/i.test(rawText);
+            const cleanContent = rawText.replace(/^(~|\[(x| )\])\s*/i, "").trim();
+            const safeContent = escapeHtml(cleanContent || "Empty item");
 
-        html += `
-            <li class="checklist-item">
-                <input type="checkbox" ${isChecked ? "checked" : ""} data-line="${index}">
-                <span class="prefix-number">${displayCounter}.</span>
-                <span class="item-text ${isChecked ? 'completed-item' : ''}">${safeContent}</span>
-            </li>`;
-        displayCounter++;
-    });
-
-    html += "</ul>";
-    output.innerHTML = html;
-
-    output.querySelectorAll("input[type='checkbox']").forEach((checkbox) => {
-        checkbox.addEventListener("change", (e) => {
-            const lineIndex = parseInt(e.target.getAttribute("data-line"));
-            const lineArray = editor.value.split("\n");
-            let targetLine = lineArray[lineIndex];
-
-            if (e.target.checked) {
-                if (!targetLine.trim().startsWith("~")) {
-                    const indent = targetLine.match(/^\s*/)[0];
-                    targetLine = indent + "~ " + targetLine.trim();
-                }
-            } else {
-                const indent = targetLine.match(/^\s*/)[0];
-                // Updated Regex: Handles '~', '[x]', and '[ ]' prefixes cleanly
-                targetLine = indent + targetLine.trim().replace(/^(~|\[(x| )\])\s*/i, "");
-            }
-
-            lineArray[lineIndex] = targetLine;
-            editor.value = lineArray.join("\n");
-
-            if (notesData[activeNoteId]) {
-                notesData[activeNoteId].content = editor.value;
-            }
-
-            renderContent();
-            saveRoomData();
+            html += `
+                <li class="checklist-item">
+                    <input type="checkbox" ${isChecked ? "checked" : ""} data-line="${index}">
+                    <span class="prefix-number">${displayCounter}.</span>
+                    <span class="item-text ${isChecked ? 'completed-item' : ''}">${safeContent}</span>
+                </li>`;
+            displayCounter++;
         });
-    });
-}
+
+        html += "</ul>";
+        output.innerHTML = html;
+
+        output.querySelectorAll("input[type='checkbox']").forEach((checkbox) => {
+            checkbox.addEventListener("change", (e) => {
+                const lineIndex = parseInt(e.target.getAttribute("data-line"));
+                const lineArray = editor.value.split("\n");
+                let targetLine = lineArray[lineIndex];
+
+                if (e.target.checked) {
+                    if (!targetLine.trim().startsWith("~")) {
+                        const indent = targetLine.match(/^\s*/)[0];
+                        targetLine = indent + "~ " + targetLine.trim();
+                    }
+                } else {
+                    const indent = targetLine.match(/^\s*/)[0];
+                    // Updated Regex: Handles '~', '[x]', and '[ ]' prefixes cleanly
+                    targetLine = indent + targetLine.trim().replace(/^(~|\[(x| )\])\s*/i, "");
+                }
+
+                lineArray[lineIndex] = targetLine;
+                editor.value = lineArray.join("\n");
+
+                if (notesData[activeNoteId]) {
+                    notesData[activeNoteId].content = editor.value;
+                }
+
+                renderContent();
+                saveRoomData();
+            });
+        });
+    }
 
 async function saveRoomData(noteId = activeNoteId) {
     const currentRole = document.body.dataset.roomRole;
